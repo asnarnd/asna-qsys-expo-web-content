@@ -23,6 +23,7 @@ const AsnaDataAttrName = {
 
     // Feeback reporting
     ROWCOL: 'data-asna-rowcol',
+    ALIAS: 'data-asna-alias',
 
     // Dropdown
     VALUES: 'data-asna-values',

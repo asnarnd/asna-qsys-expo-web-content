@@ -46,8 +46,18 @@ class FeedbackArea {
         }
 
         let modelName = el.name;
-        if (modelName.indexOf('.') < 0) {
+        let alias = el.getAttribute(AsnaDataAttrName.ALIAS);
+        let dot = modelName.indexOf('.');
+
+        if (dot < 0) {
+            if (alias) {
+                modelName = alias;
+            }
             modelName = `${this.findRecordAncestorName(el)}.${modelName}`;
+        }
+        else if (alias) {
+            let record = modelName.substring(0, dot);
+            modelName = `${record}.${alias}`;
         }
 
         FeedbackArea.setHiddenFieldValue(form, FEEDBACK_HIDDEN_FIELD_NAME.atCursorLocation, modelName);
