@@ -38,6 +38,9 @@ const AsnaDataAttrName = {
     CALENDAR_NAMES: 'data-asna-calendar-names',
     CALENDAR_OPTIONS: 'data-asna-calendar-options',
 
+    // Decimal Date (date whose value is a decimal)
+    DEC_DATE_OPTIONS: 'data-asna-decdate-options',
+
     // Menus
     ACTIVEKEY_LOCATION: 'data-asna-activekey-location',
 
