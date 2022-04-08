@@ -443,6 +443,7 @@ class Page {
         Checkbox.prepareForSubmit(form);
         RadioButtonGroup.prepareForSubmit(form);
         Signature.prepareForSubmit(form);
+        DecDate.prepareForSubmit(form);
         form.submit();
     }
 
@@ -597,6 +598,20 @@ class Page {
 
         if (main.classList) {
             main.classList.remove('display-element-uninitialized');
+        }
+    }
+}
+
+class DecDate {
+    static prepareForSubmit(form) {
+        const elements = form.querySelectorAll(`input[${AsnaDataAttrName.DEC_DATE_OPTIONS}]`);
+
+        for (let i = 0, l = elements.length; i < l; i++) {
+            const input = elements[i];
+            const separator = input.getAttribute(AsnaDataAttrName.DEC_DATE_OPTIONS);
+            if (separator && separator.length === 1 && input.value && typeof input.value === 'string') {
+                input.value = input.value.replace(new RegExp(`${separator}`, `g`), '');
+            }
         }
     }
 }
