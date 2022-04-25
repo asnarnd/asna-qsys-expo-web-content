@@ -113,7 +113,7 @@
     visibility: hidden;
 }
 
-.dds-grid-row input, .dds-grid-row select, select {
+.dds-grid-row input, .dds-grid-row select, select, .dds-grid-row textarea {
     border: 1px solid whitesmoke;
     border-radius: 5px;
     font-size: calc( var(--body-font-size) * 0.75 ); /* Reduce font to avoid row to be taller than normal */
@@ -219,6 +219,11 @@ body {
 
 .dds-preserve-blanks {
     white-space: pre;
+}
+
+.dds-multiline {
+    resize: none;
+    overflow-y: hidden;
 }
 
 /*-------------------------------------------*\
