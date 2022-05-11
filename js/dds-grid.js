@@ -14,8 +14,49 @@ const DDS_FILE_LINES = 27;
 const MAIN_SELECTOR = 'main[role=main]';
 const CLASS_GRID_ROW = 'dds-grid-row';
 const CLASS_GRID_EMPTY_ROW = 'dds-grid-empty-row';
+const CLASS_PRESERVE_BLANKS = 'dds-preserve-blanks';
 
 class DdsGrid {
+    addWinPopupCorners(activeWindowRecord) {
+        const winSpecs = DdsWindow.parseWinSpec();
+        if (!winSpecs) {
+            return;
+        }
+
+        const ltCorner = this.findElAtRowCol(activeWindowRecord, 1, winSpecs.left + 1);
+        const brCorner = this.findElAtRowCol(activeWindowRecord, winSpecs.height, winSpecs.left + winSpecs.width);
+
+        if (ltCorner && ltCorner.el && brCorner && brCorner.el) {
+            DdsWindow.setCorners(ltCorner.el, brCorner.el);
+            return; // No need to create corners.
+        }
+
+        let leftTopCorner = ltCorner ? ltCorner.el : null;
+        let bottomRightCorner = brCorner ? brCorner.el : null;
+
+        if (!leftTopCorner) {
+            let divRow = ltCorner ? ltCorner.divRow : null;
+            leftTopCorner = this.createSpanGridStyle('' + (winSpecs.left + 1));
+            if (!divRow) {
+                divRow = this.createDivGridRowStyle('1');
+                activeWindowRecord.insertBefore(divRow, activeWindowRecord.firstChild);
+            }
+            divRow.appendChild(leftTopCorner);
+        }
+
+        if (!bottomRightCorner) {
+            let divRow = brCorner ? brCorner.divRow: null;
+            bottomRightCorner = this.createSpanGridStyle('' + (winSpecs.left + winSpecs.width));
+            if (!divRow) {
+                divRow = this.createDivGridRowStyle(winSpecs.height);
+                activeWindowRecord.appendChild(divRow);
+            }
+            divRow.appendChild(bottomRightCorner);
+        }
+
+        DdsWindow.setCorners(leftTopCorner, bottomRightCorner);
+    }
+
     completeGridRows(form, activeWindowRecord) {
         const records = this.findAllRecords(form);
 
@@ -142,6 +183,23 @@ class DdsGrid {
         }
     }
 
+    createDivGridRowStyle(rowVal) {
+        const div = document.createElement('div');
+        if (rowVal) {
+            div.setAttribute(AsnaDataAttrName.ROW, rowVal);
+        }
+        div.className = CLASS_GRID_ROW;
+        return div;
+    }
+
+    createSpanGridStyle(colVal) {
+        const span = document.createElement('span');
+        span.className = CLASS_PRESERVE_BLANKS;
+        span.setAttribute('style', `grid-column: ${colVal} / span 1; grid-row: 1`);
+        span.innerText = ' ';
+        return span;
+    }
+
     createEmptyDivGridRowStyle(rowVal) {
         const emptyDiv = document.createElement('div');
         if (rowVal) {
@@ -217,6 +275,26 @@ class DdsGrid {
         }
 
         return sfl;
+    }
+
+    findElAtRowCol(divRec, row, col) {
+        const divRow = divRec.querySelector(`div[${AsnaDataAttrName.ROW}='${row}']`);
+        if (!divRow) {
+            return null;
+        }
+
+        let result = { divRow: divRow, el : null };
+
+        const candidates = divRow.querySelectorAll('[style*="grid-column"]');
+
+        for (let i = 0, l = candidates.length; i < l; i++) {
+            if (candidates[i].style.gridColumnStart === '' + col) {
+                result.el = candidates[i]; // Note: we don't care about End (or Span)
+                return result;
+            }
+        }
+
+        return result;
     }
 }
 

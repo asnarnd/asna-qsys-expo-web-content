@@ -32,6 +32,8 @@ const FLAG = {
 class DdsWindow {
     init(form) {
         this.activeWindowRecord = null;
+        this.topLeftCorner = null;
+        this.bottomRightCorner = null;
         this.winRestoreStack = null;
 
         this.pageHasWindows = this.getBooleanFlag(form, FLAG.PAGE_HAS_WINDOWS);
@@ -149,9 +151,9 @@ class DdsWindow {
             DdsWindow.log('restoreWindowPrevPage - htmlBackground');
         }
 
-        const winBackdrop = this.createWindowBackdrop(form, highestZIndex + 3);
+        const winBackdrop = this.createWindowBackdrop(highestZIndex + 3);
         const winSpec = this.parseWinSpec();
-        const winOffset = winSpec ? (winSpec.left - 1) * this.calcColWidth() : 0;
+        const winOffset = winSpec ? (winSpec.left /*- 1*/) * this.calcColWidth() : 0;
 
         if (topStackWindowEntry && topStackWindowEntry.win) {
             DdsWindow.log(`restoreWindowPrevPage - win[${topStackWindowEntry.win.length}]`);
@@ -199,31 +201,39 @@ class DdsWindow {
         }
     }
 
-    createWindowBackdrop(form, zIndex) {
+    createWindowBackdrop(zIndex) {
         if (!this.activeWindowRecord) {
             return null;
         }
 
-        const rowHeight = this.calcDdsRowHeight(form);
         const backDrop = document.createElement('div');
         const winSpec = this.parseWinSpec();
 
         backDrop.className = WINDOW_CSS_CLASS.BACKDROP;
         backDrop.style.zIndex = zIndex;
-        backDrop.style.top = `${(winSpec.top - 1) * rowHeight}px`;
-        backDrop.style.width = `${winSpec.width * this.calcColWidth()}px`;
-        backDrop.style.height = `${(winSpec.height+1) * rowHeight}px`;
 
-        backDrop.style.padding = `${this.calcColWidth()}px`;
-        backDrop.style.paddingBottom = 0; // It looked too high (reduce it a bit)
-        backDrop.innerText = winSpec.title;
+        if (this.topLeftCorner && this.bottomRightCorner) {
+            const leftTopRect = this.topLeftCorner.getBoundingClientRect();
+            const bottomRightRect = this.bottomRightCorner.getBoundingClientRect();
+            const top = leftTopRect.y;
+            const width = (bottomRightRect.x + bottomRightRect.width ) - leftTopRect.x;
+            const height = (bottomRightRect.y + bottomRightRect.height) - leftTopRect.y;
+            backDrop.style.top = `${top}px`;
+            backDrop.style.width = `${width}px`;
+            backDrop.style.height = `${height}px`;
+        }
+
+        const header = document.createElement('div');
+        header.innerText = winSpec.title;
+        header.className = 'dds-window-header';
+        backDrop.appendChild(header);
 
         return backDrop;
     }
 
     parseWinSpec() {
         if (!this.activeWindowRecord) {
-            return {};
+            return null;
         }
 
         const encWinSpec = this.activeWindowRecord.getAttribute(AsnaDataAttrName.WINDOW);
@@ -232,7 +242,7 @@ class DdsWindow {
             return JSON.parse(strJson);
         }
 
-        return {};
+        return null;
     }
 
     createInactivePopup(form, htmlBackdrop, htmlWin, zIndex) {
@@ -295,44 +305,6 @@ class DdsWindow {
         } 
     }
 
-    calcDdsRowHeight(form) {
-        let rowHeightCalc = this.calcRowHeight(form.querySelectorAll(`div[class~="${CLASS_GRID_ROW}"]`));
-        let emptyRowHeightCalc = this.calcRowHeight(form.querySelectorAll(`div[class~="${CLASS_GRID_EMPTY_ROW}"]`));
-
-        if (!emptyRowHeightCalc.guess) { // More reliable: non-empty affected by standard HTML elements (or icons)
-            return emptyRowHeightCalc.result;
-        }
-
-        if (!rowHeightCalc.guess) {
-            return rowHeightCalc.result;
-        }
-
-        let bestGuessCalc = this.calcRowHeight();
-        return bestGuessCalc.result;
-    }
-
-    calcRowHeight(oneOfSelection) {
-        let fontHeight = this.calcFontSize();
-        let padTop = fontHeight * 0.26; // computedStyle.getPropertyValue('--dds-grid-row-padding-top');
-        let padBott = fontHeight * 0.26; // computedStyle.getPropertyValue('--dds-grid-row-padding-bottom');
-        let bestGuess = padTop + fontHeight + padBott;
-
-        if (!oneOfSelection || !oneOfSelection.length) {
-            return { result: bestGuess, guess: true };
-        }
-        let maxRowHeight = 0;
-        oneOfSelection.forEach((row) => {
-            const rect = row.getBoundingClientRect();
-            maxRowHeight = Math.max(rect.height, maxRowHeight);
-        });
-
-        if (maxRowHeight > fontHeight) {
-            return { result: maxRowHeight, guess: false };
-        }
-
-        return { result: bestGuess, guess: true };
-    }
-
     calcColWidth() {
         let gridColWidthVar = getComputedStyle(document.documentElement).getPropertyValue('--dds-grid-col-width');
         return parseFloat(StringExt.trim(gridColWidthVar)); // Remove 'px'
@@ -363,6 +335,11 @@ class DdsWindow {
         );
 
         return highestZIndex;
+    }
+
+    setCorners(topLeft, bottomRight) {
+        this.topLeftCorner = topLeft;
+        this.bottomRightCorner = bottomRight;
     }
 
     static queryFormMainElement(form) {
