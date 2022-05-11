@@ -62,6 +62,7 @@ class Page {
 
         DdsWindow.init(thisForm);
 
+        DdsGrid.addWinPopupCorners(DdsWindow.activeWindowRecord);
         DdsGrid.completeGridRows(thisForm, DdsWindow.activeWindowRecord);
         this.stretchConstantsText();
         this.addOnClickPushKeyEventListener();
