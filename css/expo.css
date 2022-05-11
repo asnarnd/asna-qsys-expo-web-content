@@ -342,6 +342,12 @@ body {
     color: lightgrey; /* Inactive Window Title */
 }
 
+.dds-window-header {
+    height: 1.5em;
+    line-height: 1.5em;
+    font-weight: bold;
+}
+
 /*-------------------------------------------*\
     Subfile effects (record cueing, sflend)
 
