@@ -45,22 +45,7 @@ class FeedbackArea {
             return;
         }
 
-        let modelName = el.name;
-        let alias = el.getAttribute(AsnaDataAttrName.ALIAS);
-        let dot = modelName.indexOf('.');
-
-        if (dot < 0) {
-            if (alias) {
-                modelName = alias;
-            }
-            modelName = `${this.findRecordAncestorName(el)}.${modelName}`;
-        }
-        else if (alias) {
-            let record = modelName.substring(0, dot);
-            modelName = `${record}.${alias}`;
-        }
-
-        FeedbackArea.setHiddenFieldValue(form, FEEDBACK_HIDDEN_FIELD_NAME.atCursorLocation, modelName);
+        this.updateElementCursorLocation(form, el);
 
         let rowcol = el.getAttribute(AsnaDataAttrName.ROWCOL);
         if (rowcol) {
@@ -75,6 +60,25 @@ class FeedbackArea {
         if (sflCursorRrn >= 0) {
             FeedbackArea.setHiddenFieldValue(form, FEEDBACK_HIDDEN_FIELD_NAME.atSflCursorRrn, sflCursorRrn);
         }
+    }
+
+    updateElementCursorLocation(form, el) {
+        let modelName = el.name;
+        let alias = el.getAttribute(AsnaDataAttrName.ALIAS);
+        const dot = modelName.indexOf('.');
+
+        if (dot < 0) {
+            if (alias) {
+                modelName = alias;
+            }
+            modelName = `${this.findRecordAncestorName(el)}.${modelName}`;
+        }
+        else if (alias) {
+            let record = modelName.substring(0, dot);
+            modelName = `${record}.${alias}`;
+        }
+
+        FeedbackArea.setHiddenFieldValue(form, FEEDBACK_HIDDEN_FIELD_NAME.atCursorLocation, modelName);
     }
 
     findRecordAncestorName(el) {
@@ -103,14 +107,46 @@ class FeedbackArea {
     }
 
     updateSubfileCursorRrnFromRow(row) {
-        const siblingHidden = row.parentElement.querySelectorAll('input[type="hidden"][name][value]')
-        for (let i = 0, l = siblingHidden.length; i < l; i++) {
-            const input = siblingHidden[i]; 
-            if (input.getAttribute('name').endsWith('._RecordNumber')) {
-                FeedbackArea.setHiddenFieldValue(input.form, FEEDBACK_HIDDEN_FIELD_NAME.atSflCursorRrn, input.getAttribute('value'));
-                return;
+        const input_RecordNumber = this.getHiddenInputRowRecNumber(row);
+        if (input_RecordNumber) {
+            const val = input_RecordNumber.getAttribute('value');
+            FeedbackArea.setHiddenFieldValue(input_RecordNumber.form, FEEDBACK_HIDDEN_FIELD_NAME.atSflCursorRrn, val);
+            return val;
+        }
+        return null;
+    }
+
+    updateSubfileCursorLocation(row) {
+        const inputsInRow = row.querySelectorAll('input,select,textarea:not([type="hidden"])');
+        if (inputsInRow.length > 0) {
+            const firstInput = inputsInRow[0];
+            this.updateElementCursorLocation(firstInput.form, firstInput);
+            return;
+        }
+        const input_RecordNumber = this.getHiddenInputRowRecNumber(row);
+        if (input_RecordNumber) { // Expected to be found.
+            const form = input_RecordNumber.form;
+            FeedbackArea.setHiddenFieldValue(form, FEEDBACK_HIDDEN_FIELD_NAME.atCursorLocation, '');
+            const noFieldNamespace = input_RecordNumber.getAttribute('name');
+            if (noFieldNamespace) {
+                const lastIndex = noFieldNamespace.lastIndexOf('.'); // index of '._RecordNumber'
+                if (lastIndex > 0) {
+                    const noFieldCursorLoc = noFieldNamespace.substring(0, lastIndex);
+                    FeedbackArea.setHiddenFieldValue(form, FEEDBACK_HIDDEN_FIELD_NAME.atCursorLocation, noFieldCursorLoc);
+                }
             }
         }
+    }
+
+    getHiddenInputRowRecNumber(row) {
+        const siblingHidden = row.parentElement.querySelectorAll('input[type="hidden"][name][value]')
+        for (let i = 0, l = siblingHidden.length; i < l; i++) {
+            const input = siblingHidden[i];
+            if (input.getAttribute('name').endsWith('._RecordNumber')) {
+                return input;
+            }
+        }
+        return null;
     }
 
     static setHiddenFieldValue(form, inputName, value) {
