@@ -275,7 +275,9 @@ class SubfileController {
             row.classList.add(EXPO_SUBFILE_CLASS.CURRENT_RECORD);
         }
 
-        FeedbackArea.updateSubfileCursorRrnFromRow(row);
+        if (FeedbackArea.updateSubfileCursorRrnFromRow(row)) {
+            FeedbackArea.updateSubfileCursorLocation(row);
+        }
         // Subfile.setMousePos(row, lastMousePos); TO-DO
     }
 
