@@ -244,7 +244,8 @@ class AidKeyHelper {
     }
 
     isEnabled(mapIndex) {
-        if (mapIndex < 0) return false;
+        if (mapIndex < 0)    { return false; }
+        if (mapIndex === AidKeyMapIndex.Enter) { return true;  } // Always enabled.
         return this.isAttention(mapIndex) || this.isFunction(mapIndex);
     }
 
