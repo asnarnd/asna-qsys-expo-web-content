@@ -325,15 +325,16 @@ class SubfileController {
         }
 
         if (field && typeof field.value !== 'undefined') {
-            field.value = targetValue;
+            if (targetValue) {
+                field.value = targetValue;
+            }
             if (field.type === 'checkbox' && el.value === el.defaultValue) {
                 field.checked = true;
             }
+            if (typeof field.focus === 'function') {
+                field.focus();
+            }
         }
-
-        //if (field && typeof field.focus === 'function') {
-        //    field.focus();
-        //}
 
         if (aidKey) {
             window.asnaExpo.page.pushKey(aidKey, fieldName, targetValue);
