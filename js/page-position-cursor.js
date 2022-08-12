@@ -106,8 +106,23 @@ class PositionCursor {
             return;
         }
 
-        for (let i = 0; i < inputCount; i++) {
-            const input = inputsInSubfile[i];
+        PositionCursor.toSelectorWithName(inputsInSubfile, inputCount);
+    }
+
+    static toFirstInputInSubfileRow(row) {
+        const inputsInRow = row.querySelectorAll('input,select,textarea:not([type="hidden"])');
+        const inputCount = inputsInRow.length;
+
+        if (inputCount === 0) {
+            return;
+        }
+
+        PositionCursor.toSelectorWithName(inputsInRow, inputCount);
+    }
+
+    static toSelectorWithName(selector, count) {
+        for (let i = 0; i < count; i++) {
+            const input = selector[i];
             if (!input.name) {
                 continue;
             }

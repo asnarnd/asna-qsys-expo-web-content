@@ -217,7 +217,7 @@ class SubfileController {
     }
 
     static addMouseCueEvents(sflEl, inputBehaviour) {
-        if (!inputBehaviour || !inputBehaviour.dblClick && !inputBehaviour.clickSetsCurrentRecord && !inputBehaviour.clickSetsCurrentRecord) {
+        if (!inputBehaviour || !inputBehaviour.dblClick && !inputBehaviour.clickSetsCurrentRecord ) {
             return false;
         }
 
@@ -242,6 +242,7 @@ class SubfileController {
             const cueCurrentRecord = inputBehaviour.clickSetsCurrentRecord
             row.addEventListener('click', () => {
                 SubfileController.setCurrentSelection(sflEl, row, cueCurrentRecord);
+                PositionCursor.toFirstInputInSubfileRow(row);
             });
 
             if (inputBehaviour.dblClick.aidKey || inputBehaviour.dblClick.targetField) {
@@ -325,15 +326,16 @@ class SubfileController {
         }
 
         if (field && typeof field.value !== 'undefined') {
-            field.value = targetValue;
+            if (targetValue) {
+                field.value = targetValue;
+            }
             if (field.type === 'checkbox' && el.value === el.defaultValue) {
                 field.checked = true;
             }
+            if (typeof field.focus === 'function') {
+                field.focus();
+            }
         }
-
-        //if (field && typeof field.focus === 'function') {
-        //    field.focus();
-        //}
 
         if (aidKey) {
             window.asnaExpo.page.pushKey(aidKey, fieldName, targetValue);
