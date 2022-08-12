@@ -7,7 +7,8 @@
 
 export { theDropDown as DropDown };
 
-import { AsnaDataAttrName } from '../js/asna-data-attr.js';
+import { AsnaDataAttrName } from './asna-data-attr.js';
+import { StringExt } from './string.js';
 
 class DropDown {
     initBoxes() {
@@ -129,7 +130,16 @@ class DropDown {
             select.appendChild(option);
         }
 
+        const value = input.value ? input.value : null;
         input.parentNode.replaceChild(select, input); // Note: input will be destroyed during DOM's garbage collection.
+        if (value) {
+            for (let i = 0, l = select.options.length; i < l; i++) {
+                if ( DropDown.isSameOptionValue(select.options[i].value, value)) {
+                    select.selectedIndex = i;
+                    break;
+                }
+            }
+        }
     }
 
     static allZeroes(test) {
@@ -144,6 +154,21 @@ class DropDown {
         }
 
         return true;
+    }
+
+    static isSameOptionValue(optVal, val) {
+        if (typeof optVal === 'string' && typeof optVal === typeof val) {
+            return StringExt.trim(optVal) == StringExt.trim(val);
+        }
+        else if (typeof optVal === typeof val) {
+            return optVal == val;
+        }
+
+        if (typeof optVal === 'string' && typeof val === 'number') {
+            const optNumVal = parseInt(StringExt.trim(optVal), 10);
+            return optNumVal === val;
+        }
+        return false; // Don't know
     }
 }
 
