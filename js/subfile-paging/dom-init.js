@@ -217,7 +217,7 @@ class SubfileController {
     }
 
     static addMouseCueEvents(sflEl, inputBehaviour) {
-        if (!inputBehaviour || !inputBehaviour.dblClick && !inputBehaviour.clickSetsCurrentRecord && !inputBehaviour.clickSetsCurrentRecord) {
+        if (!inputBehaviour || !inputBehaviour.dblClick && !inputBehaviour.clickSetsCurrentRecord ) {
             return false;
         }
 
@@ -242,6 +242,7 @@ class SubfileController {
             const cueCurrentRecord = inputBehaviour.clickSetsCurrentRecord
             row.addEventListener('click', () => {
                 SubfileController.setCurrentSelection(sflEl, row, cueCurrentRecord);
+                PositionCursor.toFirstInputInSubfileRow(row);
             });
 
             if (inputBehaviour.dblClick.aidKey || inputBehaviour.dblClick.targetField) {
