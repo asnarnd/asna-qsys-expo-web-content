@@ -60,6 +60,15 @@ class Page {
         this.aidKeyBitmap = hiddenInput ? hiddenInput.value: '';
         document.addEventListener('keydown', this.handleDocumentKeyDown, false);
 
+        // If DdsFunctionKeys Location="Hidden", remove it before Window calculations.
+        const nav = document.querySelector(`nav[${AsnaDataAttrName.ACTIVEKEY_LOCATION}]`);
+        if (nav) {
+            const location = nav.getAttribute(AsnaDataAttrName.ACTIVEKEY_LOCATION);
+            if (location === 'hidden') {
+                nav.parentNode.removeChild(nav);
+            }
+        }
+
         DdsWindow.init(thisForm);
 
         DdsGrid.addWinPopupCorners(DdsWindow.activeWindowRecord);

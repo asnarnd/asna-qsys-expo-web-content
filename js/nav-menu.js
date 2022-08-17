@@ -13,22 +13,17 @@ class NavigationMenu {
     init() {
         const nav = document.querySelector(`nav[${AsnaDataAttrName.ACTIVEKEY_LOCATION}]`);
 
-        if (!nav) {
-            return;
+        if (!nav) { // location === 'hidden' ... We already removed the nav element.
+            return null;
         }
 
         const location = nav.getAttribute(AsnaDataAttrName.ACTIVEKEY_LOCATION);
         nav.removeAttribute(AsnaDataAttrName.ACTIVEKEY_LOCATION);
 
-        if (location === 'hidden') {
-            nav.parentNode.removeChild(nav);
-            return;
-        }
-
         const main = document.querySelector('main[role=main]');
 
         if (!main) {
-            return;
+            return null;
         }
 
         const container = document.createElement('div');
