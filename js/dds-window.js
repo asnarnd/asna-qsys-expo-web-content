@@ -144,7 +144,19 @@ class DdsWindow {
             const manipulate = new BackDOM_Manipulator();
             backDiv.innerHTML = manipulate.makeReadOnly(htmlBackground);
 
-            mainPanel.style.zIndex = highestZIndex + 4;
+            let positionedPanel = mainPanel; // Only positioned items may have z-index.
+            if (positionedPanel.classList && !positionedPanel.classList.contains('dds-two-panel-item')) {
+                // DdsFunctionKeys (nav) must have Location == 'hidden'
+                positionedPanel = form.querySelector('main[role=main]'); 
+                if (positionedPanel) {
+                    const panelContainer = positionedPanel.parentElement;
+                    if (panelContainer && panelContainer.style )
+                        panelContainer.style.display = 'flex'; // Flex with one child behaves like unset (but it is consodered positioned)
+                }
+            }
+            if (positionedPanel && positionedPanel.style)
+                positionedPanel.style.zIndex = highestZIndex + 4;
+
             backDiv.style.zIndex = highestZIndex + 1;
             document.body.appendChild(backDiv);
 
