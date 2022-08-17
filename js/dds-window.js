@@ -227,9 +227,15 @@ class DdsWindow {
         if (this.topLeftCorner && this.bottomRightCorner) {
             const leftTopRect = this.topLeftCorner.getBoundingClientRect();
             const bottomRightRect = this.bottomRightCorner.getBoundingClientRect();
-            const top = leftTopRect.y;
-            const width = (bottomRightRect.x + bottomRightRect.width ) - leftTopRect.x;
-            const height = (bottomRightRect.y + bottomRightRect.height) - leftTopRect.y;
+
+            const padding = this.calcRowPadding();
+            const headerHeight = this.calcWindowHeaderHeight();
+            const border = this.calcPopupBorderWidth();
+            const cellH = bottomRightRect.height - 1;
+
+            const top = leftTopRect.y - (headerHeight + padding.top + padding.bottom);
+            const width = ((bottomRightRect.x + (bottomRightRect.width - 1) - leftTopRect.x) - 2 * border)-1;
+            const height = (((bottomRightRect.y + cellH - leftTopRect.y) - 2 * border) - 1) - cellH;
             backDrop.style.top = `${top}px`;
             backDrop.style.width = `${width}px`;
             backDrop.style.height = `${height}px`;
@@ -317,14 +323,38 @@ class DdsWindow {
         } 
     }
 
+    calc(cssGlobal) {
+        const varValue = getComputedStyle(document.documentElement).getPropertyValue(cssGlobal);
+        if (typeof varValue.endsWith == 'function' && varValue.endsWith('em')) {
+            return this.convertEmToPixel(StringExt.trim(varValue));
+        }
+        return parseFloat(StringExt.trim(varValue)); // Assume 'px'
+    }
+
+    convertEmToPixel(em) {
+        const num = parseFloat(StringExt.trim(em));
+        return this.calcFontSize() * num;
+    }
+
     calcColWidth() {
-        let gridColWidthVar = getComputedStyle(document.documentElement).getPropertyValue('--dds-grid-col-width');
-        return parseFloat(StringExt.trim(gridColWidthVar)); // Remove 'px'
+        return this.calc('--dds-grid-col-width');
+    }
+
+    calcRowPadding() {
+        return { top: this.calc('--dds-grid-row-padding-top'), bottom: this.calc('--dds-grid-row-padding-bottom')};
+    }
+
+
+    calcWindowHeaderHeight() {
+        return this.calc('--popup-header-height');
+    }
+
+    calcPopupBorderWidth() {
+        return this.calc('--popup-border-width');
     }
 
     calcFontSize() {
-        let bodyFontSizeVar = getComputedStyle(document.documentElement).getPropertyValue('--body-font-size');
-        return parseFloat(StringExt.trim(bodyFontSizeVar)); // Remove 'px'
+        return this.calc('--body-font-size');
     }
 
     getMainWindowRecordSpec(form) {
