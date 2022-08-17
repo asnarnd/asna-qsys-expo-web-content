@@ -17,6 +17,8 @@
     --body-font-weight: normal;
     --body-background: rgb(238, 238, 238);
     --popup-background: rgb(242, 242, 242);
+    --popup-header-height: 1.5em;
+    --popup-border-width: 2px;
     --body-text-color: #333;
     --msg-panel-background: #9AB8D5;
     --msg-panel-text-color: bisque;
@@ -328,7 +330,7 @@ body {
     position: absolute;
     background: var(--popup-background);
     display: block;
-    border: 2px solid var(--popup-background);
+    border: var(--popup-border-width) solid var(--popup-background);
     border-radius: 5px;
     text-align: center;
 }
@@ -343,9 +345,10 @@ body {
 }
 
 .dds-window-header {
-    height: 1.5em;
-    line-height: 1.5em;
-    font-weight: bold;
+    height: var(--popup-header-height);
+    line-height: var(--popup-header-height);
+    color: white;
+    background-color: darkblue;
 }
 
 /*-------------------------------------------*\
