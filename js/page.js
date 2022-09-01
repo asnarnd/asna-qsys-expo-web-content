@@ -122,7 +122,7 @@ class Page {
         else {
             PositionCursor.toDefaultField(thisForm);
         }
-        const sflEndIcons = SubfileController.init(DdsWindow.activeWindowRecord!==null);
+        const sflEndIcons = SubfileController.init(thisForm.querySelector('main[role=main]'),DdsWindow.activeWindowRecord!==null);
         this.initIcons(sflEndIcons);
 
         Page.promptResettableErrorMessage(thisForm);
