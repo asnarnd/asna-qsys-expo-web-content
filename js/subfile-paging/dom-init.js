@@ -33,48 +33,52 @@ const ICON_NAME_NO_MORE = 'ban-circle';
 
 class SubfileController {
 
-    static init(isWindowActive) {
+    static init(mainDiv) {
         let sflIcons = [];
-        const elements = document.querySelectorAll(`div[${AsnaDataAttrName.SFLC}]`);
+        if (mainDiv) {
+            const elements = mainDiv.querySelectorAll(`div[${AsnaDataAttrName.SFLC}]`);
 
-        for (let i = 0, l = elements.length; i < l; i++) {
-            const sflcDiv = elements[i];
+            for (let i = 0, l = elements.length; i < l; i++) {
+                const sflcDiv = elements[i];
 
-            const initEncodedData = sflcDiv.getAttribute(AsnaDataAttrName.SFLC);
+                const initEncodedData = sflcDiv.getAttribute(AsnaDataAttrName.SFLC);
 
-            if (initEncodedData) {
-                try {
-                    const encInitData = Base64.decode(initEncodedData);
-                    const initData = JSON.parse(encInitData);
-                    const sflCtrlStore = SubfilePagingStore.register(initData);
-                    const sflEl = DdsGrid.findSubfile('', sflcDiv);
+                if (initEncodedData) {
+                    try {
+                        const encInitData = Base64.decode(initEncodedData);
+                        const initData = JSON.parse(encInitData);
+                        const sflCtrlStore = SubfilePagingStore.register(initData);
+                        if (!SubfileController.hasNestedSflController(sflcDiv)) {
+                            const sflEl = DdsGrid.findSubfile(initData.name, sflcDiv);
 
-                    if (sflEl) {
-                        sflCtrlStore.initialPageState = SubfileState.rememberPageState(sflEl);
+                            if (sflEl) {
+                                sflCtrlStore.initialPageState = SubfileState.rememberPageState(sflEl);
 
-                        if (SubfileController.addMouseCueEvents(sflEl, initData.inputBehaviour)) {
-                            SubfileController.constrainRecordCueing(sflEl);
-                        }
-                        SubfileController.removeRowGap(sflEl);
-                        sflCtrlStore.fldDrop.foldLinesPerRecord = SubfileController.querySubfileFoldLinesPerRecord(sflEl);
+                                if (SubfileController.addMouseCueEvents(sflEl, initData.inputBehaviour)) {
+                                    SubfileController.constrainRecordCueing(sflEl);
+                                }
+                                SubfileController.removeRowGap(sflEl);
+                                sflCtrlStore.fldDrop.foldLinesPerRecord = SubfileController.querySubfileFoldLinesPerRecord(sflEl);
 
-                        if (sflCtrlStore.sflEnd && sflCtrlStore.sflEnd.showSubfileEnd) {
-                            const icon = SubfileController.addSubfileEndCue(
-                                sflEl,
-                                sflCtrlStore.sflEnd.isSufileEnd,
-                                sflCtrlStore.sflEnd.isSufileEnd ? sflCtrlStore.sflEnd.textOn : sflCtrlStore.sflEnd.textOff
-                            );
-                            if (icon && icon.el && icon.iconParms) {
-                                sflIcons.push(icon);
+                                if (sflCtrlStore.sflEnd && sflCtrlStore.sflEnd.showSubfileEnd) {
+                                    const icon = SubfileController.addSubfileEndCue(
+                                        sflEl,
+                                        sflCtrlStore.sflEnd.isSufileEnd,
+                                        sflCtrlStore.sflEnd.isSufileEnd ? sflCtrlStore.sflEnd.textOn : sflCtrlStore.sflEnd.textOff
+                                    );
+                                    if (icon && icon.el && icon.iconParms) {
+                                        sflIcons.push(icon);
+                                    }
+                                }
                             }
                         }
                     }
-                }
-                catch (syntaxErr) {
-                    console.warn(syntaxErr.message);
-                }
+                    catch (syntaxErr) {
+                        console.warn(syntaxErr.message);
+                    }
 
-                sflcDiv.removeAttribute(AsnaDataAttrName.SFLC);
+                    sflcDiv.removeAttribute(AsnaDataAttrName.SFLC);
+                }
             }
         }
 
@@ -93,6 +97,11 @@ class SubfileController {
     }
 
     static constrainRecordCueing(sflEl) {
+        const ROW_CUE_OFFSET_CLASS_PREFIX = 'dds-sfl-row-cue-offset-';
+        for (let i = 0; sflEl.classList.length>0 && i < 132; i++) {
+            sflEl.classList.remove(`${ROW_CUE_OFFSET_CLASS_PREFIX}${i + 1}`);
+        }
+
         const withGridCol = SubfileController.selectAllWithGridColumns(sflEl);
         const sflColRange = SubfileController.calcSflMinMaxColRange(withGridCol);
 
@@ -107,7 +116,9 @@ class SubfileController {
             SubfileController.offsetGridCol(withGridCol[i], -left);
         }
 
-        sflEl.classList.add(`dds-sfl-row-cue-offset-${left}`);
+        if (left > 0) {
+            sflEl.classList.add(`${ROW_CUE_OFFSET_CLASS_PREFIX}${left}`);
+        }
         sflEl.style.width = `calc(var(--dds-grid-col-width)*${sflRowWidth})`; 
     }
 
@@ -356,6 +367,17 @@ class SubfileController {
         for (let k = 0, lk = svgInRow.length; k < lk; k++) {
             svgInRow[k].classList.remove('icon-in-not-selected-row');
         }
+    }
+
+    static hasNestedSflController(sflcDiv) {
+        const children = sflcDiv.children;
+        for (let i = 0, l = children.length; i < l; i++ ) {
+            const child = children[i];
+            if (child.getAttribute(AsnaDataAttrName.SFLC)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
 
