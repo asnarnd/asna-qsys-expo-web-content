@@ -365,13 +365,26 @@ class Page {
         if (SubfileController.addMouseCueEvents(sflEl, sflCtrlStore.inputBehaviour)) {
             SubfileController.constrainRecordCueing(sflEl, withGridCol, sflColRange);
         }
+
         SubfileController.removeRowGap(sflEl);
 
-    /*
-    if (jsonSflCtrl.vertSBar) {
-        ASNA.Subfile.ScrollBar.CreateVertScroll(el, moveUp, function () { updateActSubfile(this); ASNA.Page.PushKey('PgUp'); }, function () { updateActSubfile(this); ASNA.Page.PushKey('PgDn'); }, moveDown);
-    }
-    */
+        if (sflCtrlStore.sflEnd && sflCtrlStore.sflEnd.showSubfileEnd) {
+            sflCtrlStore.sflEnd.isSufileEnd = res.isLastPage;
+            const icon = SubfileController.addSubfileEndCue(
+                sflEl,
+                sflCtrlStore.sflEnd.isSufileEnd,
+                sflCtrlStore.sflEnd.isSufileEnd ? sflCtrlStore.sflEnd.textOn : sflCtrlStore.sflEnd.textOff,
+                sflColRange
+            );
+
+            let sflEndIcons = [];
+            if (icon && icon.el && icon.iconParms) {
+                sflEndIcons.push(icon);
+            }
+            if (sflEndIcons.length>0)
+                this.initIcons(sflEndIcons);
+        }
+
         sflCtrlStore.initialPageState = SubfileState.rememberPageState(sflEl); // Initial State of new page.
 
         if (needToRestoreCursor) {
