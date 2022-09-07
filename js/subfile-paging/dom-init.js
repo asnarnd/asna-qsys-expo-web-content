@@ -53,9 +53,11 @@ class SubfileController {
 
                             if (sflEl) {
                                 sflCtrlStore.initialPageState = SubfileState.rememberPageState(sflEl);
+                                const withGridCol = SubfileController.selectAllWithGridColumns(sflEl);
+                                const sflColRange = SubfileController.calcSflMinMaxColRange(withGridCol);
 
                                 if (SubfileController.addMouseCueEvents(sflEl, initData.inputBehaviour)) {
-                                    SubfileController.constrainRecordCueing(sflEl);
+                                    SubfileController.constrainRecordCueing(sflEl, withGridCol, sflColRange);
                                 }
                                 SubfileController.removeRowGap(sflEl);
                                 sflCtrlStore.fldDrop.foldLinesPerRecord = SubfileController.querySubfileFoldLinesPerRecord(sflEl);
@@ -64,7 +66,8 @@ class SubfileController {
                                     const icon = SubfileController.addSubfileEndCue(
                                         sflEl,
                                         sflCtrlStore.sflEnd.isSufileEnd,
-                                        sflCtrlStore.sflEnd.isSufileEnd ? sflCtrlStore.sflEnd.textOn : sflCtrlStore.sflEnd.textOff
+                                        sflCtrlStore.sflEnd.isSufileEnd ? sflCtrlStore.sflEnd.textOn : sflCtrlStore.sflEnd.textOff,
+                                        sflColRange
                                     );
                                     if (icon && icon.el && icon.iconParms) {
                                         sflIcons.push(icon);
@@ -96,14 +99,11 @@ class SubfileController {
         return result;
     }
 
-    static constrainRecordCueing(sflEl) {
+    static constrainRecordCueing(sflEl, withGridCol, sflColRange) {
         const ROW_CUE_OFFSET_CLASS_PREFIX = 'dds-sfl-row-cue-offset-';
         for (let i = 0; sflEl.classList.length>0 && i < 132; i++) {
             sflEl.classList.remove(`${ROW_CUE_OFFSET_CLASS_PREFIX}${i + 1}`);
         }
-
-        const withGridCol = SubfileController.selectAllWithGridColumns(sflEl);
-        const sflColRange = SubfileController.calcSflMinMaxColRange(withGridCol);
 
         if (!(sflColRange.max && sflColRange.min && sflColRange.max > sflColRange.min)) {
             return;
@@ -293,9 +293,8 @@ class SubfileController {
         // Subfile.setMousePos(row, lastMousePos); TO-DO
     }
 
-    static addSubfileEndCue(sflEl, isAtBottom, tooltipText) {
+    static addSubfileEndCue(sflEl, isAtBottom, tooltipText, sflColRange) {
         let iconName = isAtBottom ? ICON_NAME_NO_MORE : ICON_NAME_MORE;
-        let color = isAtBottom ? 'darkorange' : 'darkseagreen'; // TO-DO: get them from CSS 'sflend-more' and 'sflend-bottom' class
 
         const iconRow = document.createElement('div');
         iconRow.className = 'dds-grid-row dds-row-no-gap';
@@ -303,10 +302,10 @@ class SubfileController {
         span.className = 'dds-cells-suitable-for-icons';
         span.classList.add(isAtBottom ? 'sflend-bottom':'sflend-more');
 
-        const maxGridCols = document.documentElement.style.getPropertyValue('--dds-grid-columns');
-        const maxGridColVal = parseInt(maxGridCols, 10);  
+        if (sflColRange.max && sflColRange.min && sflColRange.max > sflColRange.min) {
+            span.style.gridArea = `1 / ${(sflColRange.max - sflColRange.min)-1} / auto`;
+        }
 
-        span.style.gridColumn = `${maxGridColVal - 2}/${maxGridColVal}`;
         span.style.gridRow = '1';
         iconRow.appendChild(span);
         sflEl.appendChild(iconRow);

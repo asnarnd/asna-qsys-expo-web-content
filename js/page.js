@@ -359,8 +359,11 @@ class Page {
 
         // Now restore the edits if this page had been seen before
         SubfileState.RestoreInputChanges(sflEl, sflCtrlStore.sflEdits);
+        const withGridCol = SubfileController.selectAllWithGridColumns(sflEl);
+        const sflColRange = SubfileController.calcSflMinMaxColRange(withGridCol);
+
         if (SubfileController.addMouseCueEvents(sflEl, sflCtrlStore.inputBehaviour)) {
-            SubfileController.constrainRecordCueing(sflEl);
+            SubfileController.constrainRecordCueing(sflEl, withGridCol, sflColRange);
         }
         SubfileController.removeRowGap(sflEl);
 
