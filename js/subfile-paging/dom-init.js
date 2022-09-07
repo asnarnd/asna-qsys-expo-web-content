@@ -303,7 +303,7 @@ class SubfileController {
         span.className = 'dds-cells-suitable-for-icons';
         span.classList.add(isAtBottom ? 'sflend-bottom':'sflend-more');
 
-        const maxGridCols = document.documentElement.style.getPropertyValue('--dds-grid-columns');
+        const maxGridCols = getComputedStyle(document.documentElement).getPropertyValue('--dds-grid-columns');
         const maxGridColVal = parseInt(maxGridCols, 10);  
 
         span.style.gridColumn = `${maxGridColVal - 2}/${maxGridColVal}`;
