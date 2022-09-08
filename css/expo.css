@@ -370,6 +370,7 @@ body {
 
 .sflend-more {
     fill: darkseagreen;
+    cursor: pointer;
 }
 
 .sflend-bottom {
