@@ -313,7 +313,7 @@ class Page {
         const oldTopRrn = sflCtrlStore.current.topRrn;
 
         sflCtrlStore.sflRecords.from = Math.min(Math.min(sflCtrlStore.sflRecords.from, res.request.from), sflCtrlStore.sflRecords.from);
-        sflCtrlStore.sflRecords.to = Math.max(sflCtrlStore.sflRecords.to, res.request.to);
+        sflCtrlStore.sflRecords.to = Math.max(sflCtrlStore.sflRecords.to, res.request.to-1);
         sflCtrlStore.sflRecords.isLastPage = res.isLastPage ? 'true' : 'false';
         sflCtrlStore.current.topRrn = res.request.from;
 
@@ -368,12 +368,12 @@ class Page {
 
         SubfileController.removeRowGap(sflEl);
 
-        if (sflCtrlStore.sflEnd && sflCtrlStore.sflEnd.showSubfileEnd) {
-            sflCtrlStore.sflEnd.isSufileEnd = res.isLastPage;
+        if (sflCtrlStore.sflEnd.showSubfileEnd) {
+            const showAtBottom = sflCtrlStore.sflRecords.isLastPage === "true" ? sflCtrlStore.sflEnd.isSufileEnd : false;
             const icon = SubfileController.addSubfileEndCue(
                 sflEl,
-                sflCtrlStore.sflEnd.isSufileEnd,
-                sflCtrlStore.sflEnd.isSufileEnd ? sflCtrlStore.sflEnd.textOn : sflCtrlStore.sflEnd.textOff,
+                showAtBottom,
+                showAtBottom ? sflCtrlStore.sflEnd.textOn : sflCtrlStore.sflEnd.textOff,
                 sflColRange
             );
 
