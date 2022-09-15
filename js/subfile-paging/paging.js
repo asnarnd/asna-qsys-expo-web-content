@@ -25,7 +25,7 @@ class SubfilePaging {
 
         switch (aidKey) {
             case 'PgDn':
-                if (topRrn < to && (topRrn + adjustedPageSize) < to && (topRrn + 2 * adjustedPageSize) > to) {
+                if (topRrn < to && (topRrn + adjustedPageSize) < to && (topRrn + 2 * adjustedPageSize) > (to+1) ) {
                     adjustedPageSize = to - (topRrn + adjustedPageSize);
                 }
 
