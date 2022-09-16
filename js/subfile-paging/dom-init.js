@@ -62,11 +62,12 @@ class SubfileController {
                                 SubfileController.removeRowGap(sflEl);
                                 sflCtrlStore.fldDrop.foldLinesPerRecord = SubfileController.querySubfileFoldLinesPerRecord(sflEl);
 
-                                if (sflCtrlStore.sflEnd && sflCtrlStore.sflEnd.showSubfileEnd) {
+                                if (sflCtrlStore.sflEnd.showSubfileEnd) {
+                                    const isAtBottom = sflCtrlStore.sflEnd.isSufileEnd;
                                     const icon = SubfileController.addSubfileEndCue(
                                         sflEl,
-                                        sflCtrlStore.sflEnd.isSufileEnd,
-                                        sflCtrlStore.sflEnd.isSufileEnd ? sflCtrlStore.sflEnd.textOn : sflCtrlStore.sflEnd.textOff,
+                                        isAtBottom,
+                                        isAtBottom ? sflCtrlStore.sflEnd.textOn : sflCtrlStore.sflEnd.textOff,
                                         sflColRange
                                     );
                                     if (icon && icon.el && icon.iconParms) {
