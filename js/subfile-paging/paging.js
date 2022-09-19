@@ -24,12 +24,12 @@ class SubfilePaging {
         switch (aidKey) {
             case 'PgDn':
                 reqFrom = store.current.topRrn + store.sflRecords.pageSize;
-                reqTo = reqFrom + store.sflRecords.pageSize;
+                reqTo = reqFrom + (store.sflRecords.pageSize-1);
                 break;
 
             case 'PgUp':
                 reqFrom = Math.max( store.current.topRrn - store.sflRecords.pageSize, 0 );
-                reqTo = reqFrom + store.sflRecords.pageSize;
+                reqTo = reqFrom + (store.sflRecords.pageSize-1);
                 if (reqFrom == 0 && store.current.topRrn == 0) {
                     Kbd.showInvalidRollAlert();
                     return;
