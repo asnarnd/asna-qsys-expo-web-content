@@ -11,34 +11,28 @@ import { Fetch } from '../ajax/ajax-fetch.js';
 import { SubfilePagingStore } from '../subfile-paging/paging-store.js';
 import { Subfile } from '../subfile-paging/dom-init.js';
 import { DdsGrid } from '../dds-grid.js';
+import { Kbd } from '../kbd.js';
 
 const AJAX_RESPOSE_TIMEOUT = 3 * 60 * 1000; // 3 minutes
 
 class SubfilePaging {
     static requestPage(aidKey, store, ajaxRespEventHandler) {
-        const to = store.sflRecords.to;
-        let adjustedPageSize = store.sflRecords.pageSize;
-        let topRrn = store.current.topRrn;
         let reqFrom = -1;
         let reqTo = -1;
         let wantDropped = ! store.fldDrop.isFolded;
 
         switch (aidKey) {
             case 'PgDn':
-                if (topRrn < to && (topRrn + adjustedPageSize) < to && (topRrn + 2 * adjustedPageSize) > (to+1) ) {
-                    adjustedPageSize = to - (topRrn + adjustedPageSize);
-                }
-
-                topRrn += adjustedPageSize;
-
-                reqFrom = topRrn;
-                reqTo = reqFrom + adjustedPageSize;
+                reqFrom = store.current.topRrn + store.sflRecords.pageSize;
+                reqTo = reqFrom + store.sflRecords.pageSize;
                 break;
 
             case 'PgUp':
-                reqFrom = Math.max(topRrn - adjustedPageSize, 0);
-                adjustedPageSize = Math.min(adjustedPageSize, topRrn - reqFrom);
-                reqTo = reqFrom + adjustedPageSize;
+                reqFrom = Math.max( store.current.topRrn - store.sflRecords.pageSize, 0 );
+                reqTo = reqFrom + store.sflRecords.pageSize;
+                if (reqFrom == 0 && store.current.topRrn == 0) {
+                    Kbd.showInvalidRollAlert();
+                }
                 break;
 
             default:
@@ -56,7 +50,7 @@ class SubfilePaging {
             recordName: store.name,
             requestorAidKey: aidKey, // If case no more reocords use to submit.
             from: reqFrom,
-            to: reqTo,
+            to: reqTo + 1,           // The server expects one more (upper-limit is exclusive)
             wantDropped: wantDropped // The toggle happens when we receive the response.
         };
 
