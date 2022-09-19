@@ -32,6 +32,7 @@ class SubfilePaging {
                 reqTo = reqFrom + store.sflRecords.pageSize;
                 if (reqFrom == 0 && store.current.topRrn == 0) {
                     Kbd.showInvalidRollAlert();
+                    return;
                 }
                 break;
 
