@@ -147,7 +147,7 @@ class Kbd {
             return { aidKeyToPush: aidKey, shouldCancel: true };
         }
 
-        PageAlert.show(KEY_NOT_VALID_MSG.PgUp_PgDown, OK_TEXT);
+        Kbd.showInvalidRollAlert();
         return { returnBooleanValue: false, shouldCancel: true };
     }
 
