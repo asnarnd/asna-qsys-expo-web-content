@@ -13,23 +13,20 @@ import { Subfile } from '../subfile-paging/dom-init.js';
 import { DdsGrid } from '../dds-grid.js';
 import { Kbd } from '../kbd.js';
 
-const AJAX_RESPOSE_TIMEOUT = 3 * 60 * 1000; // 3 minutes
+const AJAX_RESPONSE_TIMEOUT = 3 * 60 * 1000; // 3 minutes
 
 class SubfilePaging {
     static requestPage(aidKey, store, ajaxRespEventHandler) {
-        let reqFrom = -1;
-        let reqTo = -1;
-        let wantDropped = ! store.fldDrop.isFolded;
+        let reqFrom = store.current.topRrn;
+        let wantDropped = !store.fldDrop.isFolded;
 
         switch (aidKey) {
             case 'PgDn':
-                reqFrom = store.current.topRrn + store.sflRecords.pageSize;
-                reqTo = reqFrom + (store.sflRecords.pageSize-1);
+                reqFrom += store.sflRecords.pageSize;
                 break;
 
             case 'PgUp':
                 reqFrom = Math.max( store.current.topRrn - store.sflRecords.pageSize, 0 );
-                reqTo = reqFrom + (store.sflRecords.pageSize-1);
                 if (reqFrom == 0 && store.current.topRrn == 0) {
                     Kbd.showInvalidRollAlert();
                     return;
@@ -38,13 +35,18 @@ class SubfilePaging {
 
             default:
                 if (aidKey === store.fldDrop.aidKey) { // Fold/Drop (toggle) request ... same range
-                    reqFrom = topRrn;
-                    const linesPerRecord = store.fldDrop.isFolded ? store.fldDrop.foldLinesPerRecord : 1; // About to go to drop, more lines fit.
-                    reqTo = linesPerRecord * store.sflRecords.pageSize;
+                    if (!store.fldDrop.foldLinesPerRecord) { return; }
+                    const foldRowsPerRecord = parseInt(store.fldDrop.foldLinesPerRecord, 10);
+                    if (foldRowsPerRecord === NaN || foldRowsPerRecord <= 0) { return; }
                     wantDropped = store.fldDrop.isFolded ? true : false; // Request opposite
+                    store.sflRecords.pageSize = wantDropped ?
+                        store.sflRecords.pageSize * foldRowsPerRecord :
+                        store.sflRecords.pageSize / foldRowsPerRecord;
                 }
                 break;
         }
+
+        const reqTo = reqFrom + (store.sflRecords.pageSize - 1);
 
         const data = { 
             action: 'getRecords',
@@ -55,7 +57,7 @@ class SubfilePaging {
             wantDropped: wantDropped // The toggle happens when we receive the response.
         };
 
-        Fetch.fetchWithTimeout( decodeURI(document.URL), data, AJAX_RESPOSE_TIMEOUT)
+        Fetch.fetchWithTimeout( decodeURI(document.URL), data, AJAX_RESPONSE_TIMEOUT)
             .then(function (response) {
                     response.json().then(function (jsonStr) {
                         ajaxRespEventHandler(jsonStr);
