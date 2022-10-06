@@ -169,6 +169,26 @@ class DdsGrid {
         return all;
     }
 
+    sendMainGridChildrenToFront(form) {
+        const records = this.findAllRecords(form);
+        if (!records) {
+            return;
+        }
+        const highestZIndex = DdsWindow.calcHighestZIndex();
+        for (let rec = 0, lrec = records.length; rec < lrec; rec++) {
+            const ddsRows = records[rec].querySelectorAll(`div[class~=${CLASS_GRID_ROW}]`);
+            for (let r = 0, lr = ddsRows.length; r < lr; r++) {
+                const row = ddsRows[r];
+                const children = row.children;
+                for (let e = 0, le = children.length; e < le; e++) {
+                    if (children[e].style && (children[e].style.gridArea || children[e].style.gridColumn) ) {
+                        children[e].style.zIndex = highestZIndex + 3;
+                    }
+                }
+            }
+        }
+    }
+
     insertEmptyRows(count, beforeEl, offset) {
         const parent = beforeEl.parentElement;
 
