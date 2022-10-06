@@ -6,6 +6,7 @@
  */
 
 export { theWindow as DdsWindow};
+import { HtmlElementCapture } from './html-capture/html-element-capture.js';
 
 const CLASS_GRID_ROW = 'dds-grid-row';
 const CLASS_GRID_EMPTY_ROW = 'dds-grid-empty-row';
@@ -18,15 +19,15 @@ import { Base64 } from './base-64.js';
 import { StringExt } from './string.js';
 
 const WINDOW_CSS_CLASS = {
-    PAGE_BACKGROUND: 'dds-window-background',
-    BACKDROP: 'dds-window-popup',
-    INACTIVE_BACKDROP: 'dds-window-popup-inactive',
-    PAGE_INACTIVE_BACKGROUND: 'dds-window-background-inactive'
+    // PAGE_BACKGROUND: 'dds-window-background',
+    WINPOPUP: 'dds-window-popup' //,
+    // INACTIVE_BACKDROP: 'dds-window-popup-inactive',
+    // PAGE_INACTIVE_BACKGROUND: 'dds-window-background-inactive'
 };
 
 const FLAG = {
     PAGE_HAS_WINDOWS : '__pageHasWindows__',
-    PAGE_JUST_OPENED :'__firstOutputOp__'
+    PAGE_JUST_OPENED :'__firstOuputOp__'
 };
 
 class DdsWindow {
@@ -38,48 +39,46 @@ class DdsWindow {
 
         this.pageHasWindows = this.getBooleanFlag(form, FLAG.PAGE_HAS_WINDOWS);
 
+        this.htmlToImageStyle = DdsWindow.calcHtmlToImageStyle();
+
         if (!this.pageHasWindows) {
             return;
         }
 
+        const url = window.location.pathname;
         if ((this.pageJustOpened = this.getBooleanFlag(form, FLAG.PAGE_JUST_OPENED))) {
-            ClientStorage.removeEntriesForFile(window.location.pathname);
+            ; // Bug in QSys.Expo ClientStorage.removeEntriesForFile(url);
         }
 
         this.activeWindowRecord = this.getMainWindowRecordSpec(form);
+    //    if (!this.activeWindowRecord) {
+    //        ClientStorage.removeEntriesForFile(url);
+    //    }
         if (this.activeWindowRecord) {
-            this.winRestoreStack = ClientStorage.loadStackForFile(window.location.pathname); 
+            this.winRestoreStack = ClientStorage.loadStackForFile(url);
         }
         else {
-            ClientStorage.removeEntriesForFile(window.location.pathname);
+            ClientStorage.removeEntriesForFile(url);
         }
     }
 
-    pushRestoreWindow(winName, htmlBackground, htmlTopWin) {
-        const topWinBackdrop = document.querySelector(`[class=${WINDOW_CSS_CLASS.BACKDROP}]`); // Note: backdrop is not inside the form ...
+    static calcHtmlToImageStyle() {
+        const sampleEl = document.createElement("div");
+        sampleEl.className = 'dds-window-background';
+        const newChild = document.body.appendChild(sampleEl);
+        const cssStyle = window.getComputedStyle(sampleEl, null);
+        const style = { 'background-color': cssStyle['background-color'], opacity: cssStyle['opacity'] };
+        document.body.removeChild(newChild);
 
-        let winBackdrop = [];
+        return style;
+    }
 
-        const inactiveBackdrops = document.querySelectorAll(`[class=${WINDOW_CSS_CLASS.INACTIVE_BACKDROP}]`);
-        const inactiveWindows = document.querySelectorAll(`[class=${WINDOW_CSS_CLASS.PAGE_INACTIVE_BACKGROUND}]`);
-        
-        for (let i = 0, l = inactiveWindows.length; i < l; i++) {
-            const htmlWin = inactiveWindows[i].innerHTML;
-            const htmlBackDrop = i < inactiveBackdrops.length ? inactiveBackdrops[i].outerHTML : '';
-            const inactiveWinBackdropEntry = RestoreStack.makeWinBackdropEntry(htmlWin, htmlBackDrop);
-            winBackdrop.push(inactiveWinBackdropEntry);
+    pushRestoreWindow(winName) {
+        if (!this.winRestoreStack) {
+            this.winRestoreStack = new RestoreStack(winName);
         }
-
-        winBackdrop.push(RestoreStack.makeWinBackdropEntry(htmlTopWin, topWinBackdrop !== null ? topWinBackdrop.outerHTML : ''));
-
-        if (winBackdrop) {
-            if (!this.winRestoreStack) {
-                const newStack = [RestoreStack.makeArrayElement(winName, RestoreStack.makeEntry(0, htmlBackground, winBackdrop))];
-                this.winRestoreStack = new RestoreStack(newStack);
-            }
-            else {
-                this.winRestoreStack.pushWindow(winName, htmlBackground, winBackdrop);
-            }
+        else {
+            this.winRestoreStack.pushWindow(winName);
         }
     }
 
@@ -87,7 +86,8 @@ class DdsWindow {
         if (this.winRestoreStack === null) {
             return;
         }
-        ClientStorage.serialize(window.location.pathname, this.winRestoreStack);
+        const url = window.location.pathname;
+        ClientStorage.serializeStackForFile(url, this.winRestoreStack);
     }
 
     getBooleanFlag(form, name) {
@@ -99,87 +99,60 @@ class DdsWindow {
         return el.value.toLowerCase() === 'true';
     }
 
-    savePrevPageBackground(html) {
-        ClientStorage.savePrevPageBackground(html);
+    restoreWindowPrevPage(/*form, mainPanel*/) {
+        if (!this.activeWindowRecord) {
+            return;
+        }
+
+        const url = window.location.pathname;
+        const winName = this.activeWindowRecord.getAttribute(AsnaDataAttrName.RECORD);
+
+        if (!winName) {
+            return;
+        }
+
+        let imgData = ClientStorage.getBackgroundImage(url, winName);
+        if (!imgData) {
+            if (this.winRestoreStack) {
+                const url = window.location.pathname;
+                const winName = this.winRestoreStack.popGE();
+                imgData = ClientStorage.getBackgroundImage(url, winName);
+                ClientStorage.serializeStackForFile(url, this.winRestoreStack);
+            }
+            if (!imgData) {
+                imgData = ClientStorage.getPrevPageBackground();
+            }
+        }
+
+        if (imgData) {
+            document.documentElement.style.setProperty('--main-window-background', `url(${imgData})`);
+        }
     }
 
-    restoreWindowPrevPage(form, mainPanel) {
+    initPopup() {
         if (!this.activeWindowRecord) {
             return {};
         }
 
-        const winName = this.activeWindowRecord.getAttribute(AsnaDataAttrName.RECORD);
-
-        if (!winName) {
-            return {};
-        }
-
-        let topStackWindowEntry = null;
-        let htmlBackground = ClientStorage.getPrevPageBackground();
-        
-        if (this.winRestoreStack !== null && ! this.winRestoreStack.isEmpty()) {     
-            const i = this.winRestoreStack.find(winName);
-            if (i >= 0) {
-                this.winRestoreStack.popGE(this.winRestoreStack.elements[i].entry.index);
-                ClientStorage.serialize(window.location.pathname, this.winRestoreStack); // Convenient for debugging ... 
-            }
-
-            const topStackWindow = this.winRestoreStack.top();
-            if (topStackWindow) {
-                topStackWindowEntry = topStackWindow.entry;
-                if (topStackWindowEntry.htmlBackground) {
-                    htmlBackground = topStackWindowEntry.htmlBackground; 
-                }
-            }
-        }
-
         const highestZIndex = this.calcHighestZIndex();
 
-        let backDiv = null;
-        if (htmlBackground) {
-            backDiv = document.createElement('div');
-            backDiv.style.position = 'absolute';
-            backDiv.className = WINDOW_CSS_CLASS.PAGE_BACKGROUND;
-
-            const manipulate = new BackDOM_Manipulator();
-            backDiv.innerHTML = manipulate.makeReadOnly(htmlBackground);
-
-            let positionedPanel = mainPanel; // Only positioned items may have z-index.
-            if (positionedPanel.classList && !positionedPanel.classList.contains('dds-two-panel-item')) {
-                // DdsFunctionKeys (nav) must have Location == 'hidden'
-                positionedPanel = form.querySelector('main[role=main]'); 
-                if (positionedPanel) {
-                    const panelContainer = positionedPanel.parentElement;
-                    if (panelContainer && panelContainer.style )
-                        panelContainer.style.display = 'flex'; // Flex with one child behaves like unset (but it is consodered positioned)
-                }
-            }
-            if (positionedPanel && positionedPanel.style)
-                positionedPanel.style.zIndex = highestZIndex + 4;
-
-            backDiv.style.zIndex = highestZIndex + 1;
-            document.body.appendChild(backDiv);
-
-            DdsWindow.log('restoreWindowPrevPage - htmlBackground');
-        }
-
-        const winBackdrop = this.createWindowBackdrop(highestZIndex + 3);
+        const winPopup = this.createWinPopup(highestZIndex + 1/*3*/);
         const winSpec = this.parseWinSpec();
         const winOffset = winSpec ? (winSpec.left /*- 1*/) * this.calcColWidth() : 0;
 
-        if (topStackWindowEntry && topStackWindowEntry.win) {
-            DdsWindow.log(`restoreWindowPrevPage - win[${topStackWindowEntry.win.length}]`);
+        //if (topStackWindowEntry && topStackWindowEntry.win) {
+        //    DdsWindow.log(`restoreWindowPrevPage - win[${topStackWindowEntry.win.length}]`);
 
-            for (let i = 0, l = topStackWindowEntry.win.length; i < l; i++) {
-                const winBackdropEntry = topStackWindowEntry.win[i];
-                this.createInactivePopup(form, winBackdropEntry.htmlBackdrop, winBackdropEntry.htmlWin, highestZIndex + 3);
-            }
-        }
+        //    for (let i = 0, l = topStackWindowEntry.win.length; i < l; i++) {
+        //        const winBackdropEntry = topStackWindowEntry.win[i];
+        //        this.createInactivePopup(form, winBackdropEntry.htmlBackdrop, winBackdropEntry.htmlWin, highestZIndex + 1/*3*/);
+        //    }
+        //}
 
-        return { background: backDiv, backdrop: winBackdrop, winOffset: winOffset };
+        return { /*background: backDiv,*/ popup: winPopup, winOffset: winOffset };
     }
 
-    positionBackgroundAndBackdrop(form, newElements, scroll ) {
+    positionPopup(form, newElements, scroll ) {
         const mainEl = DdsWindow.queryFormMainElement(form);
 
         if (!mainEl || !mainEl.parentElement) {
@@ -188,41 +161,32 @@ class DdsWindow {
 
         const mainContainer = mainEl.parentElement;
         const mainRect = mainContainer.getBoundingClientRect();
+        const popup = newElements.popup;
 
-        if (newElements.background) {
-            const style = newElements.background.style;
-
-            style.left = `${mainRect.left}px`;
-            style.top = `${mainRect.top}px`;
-            style.width = `${mainRect.width}px`;
-            style.height = `${mainRect.height}px`;
-        }
-
-        const backdropEl = newElements.backdrop;
-        if (backdropEl) {
+        if (popup) {
             let newLeft = mainRect.left + newElements.winOffset;
             if (scroll && scroll.left) {
                 newLeft -= scroll.left;
             }
-            backdropEl.style.left = `${newLeft}px`;
-            if (backdropEl.style.top) {
-                const top = parseFloat(backdropEl.style.top);
-                backdropEl.style.top = `${mainRect.top + top}px`;
+            popup.style.left = `${newLeft}px`;
+            if (popup.style.top) {
+                const top = parseFloat(popup.style.top);
+                popup.style.top = `${mainRect.top + top}px`;
             }
-            document.body.appendChild(backdropEl);
+            mainEl.appendChild(popup);
         }
     }
 
-    createWindowBackdrop(zIndex) {
+    createWinPopup(zIndex) {
         if (!this.activeWindowRecord) {
             return null;
         }
 
-        const backDrop = document.createElement('div');
+        const winPopup = document.createElement('div');
         const winSpec = this.parseWinSpec();
 
-        backDrop.className = WINDOW_CSS_CLASS.BACKDROP;
-        backDrop.style.zIndex = zIndex;
+        winPopup.className = WINDOW_CSS_CLASS.WINPOPUP;
+        winPopup.style.zIndex = zIndex;
 
         if (this.topLeftCorner && this.bottomRightCorner) {
             const leftTopRect = this.topLeftCorner.getBoundingClientRect();
@@ -236,17 +200,17 @@ class DdsWindow {
             const top = leftTopRect.y - (headerHeight + padding.top + padding.bottom);
             const width = ((bottomRightRect.x + (bottomRightRect.width - 1) - leftTopRect.x) - 2 * border)-1;
             const height = (((bottomRightRect.y + cellH - leftTopRect.y) - 2 * border) - 1) - cellH;
-            backDrop.style.top = `${top}px`;
-            backDrop.style.width = `${width}px`;
-            backDrop.style.height = `${height}px`;
+            winPopup.style.top = `${top}px`;
+            winPopup.style.width = `${width}px`;
+            winPopup.style.height = `${height}px`;
         }
 
         const header = document.createElement('div');
         header.innerText = winSpec.title;
         header.className = 'dds-window-header';
-        backDrop.appendChild(header);
+        winPopup.appendChild(header);
 
-        return backDrop;
+        return winPopup;
     }
 
     parseWinSpec() {
@@ -263,64 +227,75 @@ class DdsWindow {
         return null;
     }
 
-    createInactivePopup(form, htmlBackdrop, htmlWin, zIndex) {
-        if (htmlBackdrop) {
-            const wrapper = document.createElement('div');
-            wrapper.innerHTML = htmlBackdrop; // Not supposed to have input elements ...
-            document.body.appendChild(wrapper);
-            const backDrop = wrapper.firstChild;
-            backDrop.className = WINDOW_CSS_CLASS.INACTIVE_BACKDROP;
-        }
+    //createInactivePopup(form, htmlBackdrop, htmlWin, zIndex) {
+    //    if (htmlBackdrop) {
+    //        const wrapper = document.createElement('div');
+    //        wrapper.innerHTML = htmlBackdrop; // Not supposed to have input elements ...
+    //        document.body.appendChild(wrapper);
+    //        const backDrop = wrapper.firstChild;
+    //        backDrop.className = WINDOW_CSS_CLASS.INACTIVE_BACKDROP;
+    //    }
 
-        if (htmlWin) {
-            const mainEl = DdsWindow.queryFormMainElement(form);
+    //    if (htmlWin) {
+    //        const mainEl = DdsWindow.queryFormMainElement(form);
 
-            if (!mainEl || !mainEl.parentElement) {
-                return;
-            }
+    //        if (!mainEl || !mainEl.parentElement) {
+    //            return;
+    //        }
 
-            const inactivePopup = document.createElement('div');
-            inactivePopup.style.position = 'absolute';
-            inactivePopup.className = WINDOW_CSS_CLASS.PAGE_INACTIVE_BACKGROUND;
+    //        const inactivePopup = document.createElement('div');
+    //        inactivePopup.style.position = 'absolute';
+    //        inactivePopup.className = WINDOW_CSS_CLASS.PAGE_INACTIVE_BACKGROUND;
 
-            const manipulate = new BackDOM_Manipulator();
-            const mainContainer = mainEl.parentElement;
-            const mainRect = mainContainer.getBoundingClientRect();
+    //        const manipulate = new BackDOM_Manipulator();
+    //        const mainContainer = mainEl.parentElement;
+    //        const mainRect = mainContainer.getBoundingClientRect();
 
-            const style = inactivePopup.style;
-            style.zIndex = zIndex;
-            style.left = mainRect.left + 'px';
-            style.top = mainRect.top + 'px';
-            style.width = mainRect.width + 'px';
-            style.height = mainRect.height + 'px';
+    //        const style = inactivePopup.style;
+    //        style.zIndex = zIndex;
+    //        style.left = mainRect.left + 'px';
+    //        style.top = mainRect.top + 'px';
+    //        style.width = mainRect.width + 'px';
+    //        style.height = mainRect.height + 'px';
 
-            inactivePopup.innerHTML = manipulate.makeReadOnly(htmlWin);
-            document.body.appendChild(inactivePopup);
-            inactivePopup.removeAttribute(AsnaDataAttrName.WINDOW);
-        }
-    }
+    //        inactivePopup.innerHTML = manipulate.makeReadOnly(htmlWin);
+    //        document.body.appendChild(inactivePopup);
+    //        inactivePopup.removeAttribute(AsnaDataAttrName.WINDOW);
+    //    }
+    //}
 
-    prepareForSubmit(form) {
-        const pageExtractor = new DOM_Extractor();
-
+    prepareForSubmit(form, htmlToImageCompleteEvent, htmlToImageFilterEvent) {
         if (typeof MonarchPageSavingForPopup === 'function') { // Notify user-code
             MonarchPageSavingForPopup();
         }
 
-        const mainContentHtml = pageExtractor.getMainInnerHTML(form);
+        const main = form.querySelector('main[role=main]');
+        if (main) {
+            HtmlElementCapture.captureAsImage(main, htmlToImageCompleteEvent, htmlToImageFilterEvent, this.htmlToImageStyle);
+            return true;
+        }
+
+        return false;
+    }
+
+    completePrepareSubmit(mostRecentBackgroundImageData) {
         if (this.activeWindowRecord) {
-            const htmlBackground = ClientStorage.getPrevPageBackground();
+            const url = window.location.pathname;
             const winName = this.activeWindowRecord.getAttribute(AsnaDataAttrName.RECORD);
-            this.pushRestoreWindow(winName, htmlBackground, mainContentHtml);
+
+            if (!ClientStorage.getBackgroundImage(url, winName)) { // Save if not already there.
+                ClientStorage.savePageBackground(url, winName, mostRecentBackgroundImageData);
+                this.pushRestoreWindow(winName);
+            }
             this.serializeWinRestoreStack();
         }
         else {
-            this.savePrevPageBackground(mainContentHtml);
+            ClientStorage.savePrevPageBackground(mostRecentBackgroundImageData);
         }
 
         if (typeof MonarchPageForPopupSaved === 'function') { // Notify user-code
             MonarchPageForPopupSaved();
-        } 
+        }
     }
 
     calc(cssGlobal) {
@@ -343,7 +318,6 @@ class DdsWindow {
     calcRowPadding() {
         return { top: this.calc('--dds-grid-row-padding-top'), bottom: this.calc('--dds-grid-row-padding-bottom')};
     }
-
 
     calcWindowHeaderHeight() {
         return this.calc('--popup-header-height');
@@ -397,38 +371,38 @@ class DdsWindow {
     }
 }
 
-class DOM_Extractor {
-    getMainInnerHTML(form) {
-        const mainEl = DdsWindow.queryFormMainElement(form);
-        if (!mainEl) {
-            return {};
-        }
-        const frag = document.createRange().createContextualFragment(mainEl.innerHTML);
-        const div = document.createElement('div');
-        div.appendChild(frag);
-        return div.innerHTML;
-    }
-}
+//class DOM_Extractor {
+//    getMainInnerHTML(form) {
+//        const mainEl = DdsWindow.queryFormMainElement(form);
+//        if (!mainEl) {
+//            return {};
+//        }
+//        const frag = document.createRange().createContextualFragment(mainEl.innerHTML);
+//        const div = document.createElement('div');
+//        div.appendChild(frag);
+//        return div.innerHTML;
+//    }
+//}
 
-class BackDOM_Manipulator {
-    makeReadOnly(html) {
-        const frag = document.createRange().createContextualFragment(html);
+//class BackDOM_Manipulator {
+//    makeReadOnly(html) {
+//        const frag = document.createRange().createContextualFragment(html);
 
-        const named = frag.querySelectorAll('*[name]');
-        for (let i = 0, l = named.length; i < l; i++) {
-            const input = named[i];
-            if (input.name) {
-                input.removeAttribute('name');
-            }
-            input.setAttribute( 'tabIndex', '0');
-        }
+//        const named = frag.querySelectorAll('*[name]');
+//        for (let i = 0, l = named.length; i < l; i++) {
+//            const input = named[i];
+//            if (input.name) {
+//                input.removeAttribute('name');
+//            }
+//            input.setAttribute( 'tabIndex', '0');
+//        }
 
-        const div = document.createElement('div');
-        div.appendChild(frag);
-        return div.innerHTML;
+//        const div = document.createElement('div');
+//        div.appendChild(frag);
+//        return div.innerHTML;
 
-    }
-}
+//    }
+//}
 
 const STORAGE_NS = {
     DISPLAYFILE: 'ASNA.DisplayFile',
@@ -436,123 +410,138 @@ const STORAGE_NS = {
 };
 
 class RestoreStack {
-    constructor(elements) {
-        this.elements = elements;
+    constructor(list) {
+        this.elements = list.split(',');
+    }
+
+    getAsList() {
+        if (this.elements == null || this.elements.length == 0)
+            return '';
+        let result = '';
+        for (let i = 0, l = this.elements.length; i < l; i++) {
+            if (result)
+                result += ',';
+            result += this.elements[i];
+        }
+
+        return result;
     }
 
     isEmpty() {
-        return this.elements.length === 0;
+        return this.elements == null || this.elements.length === 0;
     }
 
-    pushWindow(winName, htmlBackground, arrayWinBackdrop ) {
-        const i = this.find(winName);
-        if (i>=0) {
-            this.remove(i); 
-        }
+    pushWindow(winName) {
+        if (!this.elements)
+            this.elements = [];
 
-        this.elements.push(
-            RestoreStack.makeArrayElement(
-                winName,
-                RestoreStack.makeEntry(this.elements.length, htmlBackground, arrayWinBackdrop)
-            )
-        );
+//        const i = this.find(winName);
+//        if (i>=0) {
+//            this.remove(i); 
+//        }
+
+        this.elements.push(winName);
     }
 
-    popGE(index) {
-        let newElements = [];
-        for (let i = 0, l = this.elements.length; i < l; i++) {
-            const arrayElement = this.elements[i];
-            if (arrayElement.entry.index >= index) {
-                break;
-            }
-            newElements.push(arrayElement);
-        }
+    popGE(/*index*/) {
+//        let newElements = [];
+//        for (let i = 0, l = this.elements.length; i < l; i++) {
+//            const arrayElement = this.elements[i];
+//            if (arrayElement.entry.index >= index) {
+//                break;
+//            }
+//            newElements.push(arrayElement);
+//        }
 
-        this.elements = newElements; 
+//        this.elements = newElements; 
+        return this.isEmpty() ? null : this.elements.pop();
     }
 
-    top() {
-        return this.elements.length > 0 ? this.elements[this.elements.length - 1] : null;
-    }
+//    top() {
+//        return this.elements.length > 0 ? this.elements[this.elements.length - 1] : null;
+//    }
 
-    find(winName) {
-        for (let i = 0, l = this.elements.length; i < l; i++) {
-            const arrayElement = this.elements[i];
-            if (arrayElement.winName === winName) {
-                return i;
-            }
-        }
+//    find(winName) {
+//        for (let i = 0, l = this.elements.length; i < l; i++) {
+//            const arrayElement = this.elements[i];
+//            if (arrayElement.winName === winName) {
+//                return i;
+//            }
+//        }
 
-        return -1;
-    }
+//        return -1;
+//    }
 
-    remove(index) {
-        let newElements = [];
-        for (let i = 0, l = this.elements.length; i < index && i < l; i++) {
-            newElements.push(this.elements[i]);
-        }
-        for (let i = index + 1, l = this.elements.length; i < l; i++) {
-            newElements.push(this.elements[i]);
-        }
+//    remove(index) {
+//        let newElements = [];
+//        for (let i = 0, l = this.elements.length; i < index && i < l; i++) {
+//            newElements.push(this.elements[i]);
+//        }
+//        for (let i = index + 1, l = this.elements.length; i < l; i++) {
+//            newElements.push(this.elements[i]);
+//        }
 
-        this.elements = newElements; 
-    }
+//        this.elements = newElements; 
+//    }
 
-    static makeEntry(index, htmlBackground, arrayWinBackdrop ) {
-        let entry = {
-            htmlBackground: htmlBackground,
-            win: arrayWinBackdrop,
-            index: index
-        };
+//    static makeEntry(index, htmlBackground, arrayWinBackdrop ) {
+//        let entry = {
+//            htmlBackground: htmlBackground,
+//            win: arrayWinBackdrop,
+//            index: index
+//        };
 
-        return entry;
-    }
+//        return entry;
+//    }
 
-    static makeArrayElement(winName, entry) {
-        return {
-            winName: winName,
-            entry: entry
-        };
-    }
+//    static makeArrayElement(winName, entry) {
+//        return {
+//            winName: winName,
+//            entry: entry
+//        };
+//    }
 
-    static makeWinBackdropEntry(htmlWin, htmlBackdrop) {
-        return {
-            htmlWin: htmlWin,
-            htmlBackdrop: htmlBackdrop
-        };
-    }
+//    static makeWinBackdropEntry(htmlWin/*, htmlBackdrop*/) {
+//        return {
+//            htmlWin: htmlWin,
+//            // htmlBackdrop: htmlBackdrop
+//        };
+//    }
 }
 
 class ClientStorage {
     static loadStackForFile(filePath) {
-        let stack = [];
+        const stackList = ClientStorage.getDisplayfileStack(filePath);
+        //for (let i = 0, l = keys.length; i < l; i++) {
+        //    const key = keys[i];
+        //    const val = sessionStorage.getItem(key);
+    //        if (val) {
+    //            const winName = ClientStorage.winNameFromKey(key);
+    //            stack.push(RestoreStack.makeArrayElement( winName, ClientStorage.parseStackItem(val)) );
+    //            ClientStorage.log(`loadStackForFile key:${key}.`);
+    //        }
+        //}
 
-        const keys = ClientStorage.getSessionKeysForFile(filePath);
-        for (let i = 0, l = keys.length; i < l; i++) {
-            const key = keys[i];
-            const val = sessionStorage.getItem(key);
-            if (val) {
-                const winName = ClientStorage.winNameFromKey(key);
-                stack.push(RestoreStack.makeArrayElement( winName, ClientStorage.parseStackItem(val)) );
-                ClientStorage.log(`loadStackForFile key:${key}.`);
-            }
+        if (stackList) {
+    //        const sorted = stack.sort((a, b) => a.entry.index - b.entry.index);
+            return new RestoreStack(stackList); // sorted);
         }
 
-        if (stack.length) {
-            const sorted = stack.sort((a, b) => a.entry.index - b.entry.index);
-            return new RestoreStack(sorted); 
-        }
-
-        return  null;
+       return  null;
     }
 
-    static serialize(filePath, stack) {
-        ClientStorage.removeEntriesForFile(filePath);
-        for (let i = 0, l = stack.elements.length; i < l; i++) {
-            const key = ClientStorage.makeDisplayfileKey(filePath, stack.elements[i].winName);
-            sessionStorage.setItem(key, JSON.stringify(stack.elements[i].entry));
-            ClientStorage.log(`serialize key:${key}.`);
+    static serializeStackForFile(filePath, restoreStack) {
+        // ClientStorage.removeEntriesForFile(filePath);
+        if (!restoreStack) {
+            return;
         }
+        ClientStorage.setDisplayfileStack(filePath, restoreStack.getAsList());
+
+    //    for (let i = 0, l = stack.elements.length; i < l; i++) {
+    //        const key = ClientStorage.makeDisplayfileKey(filePath, stack.elements[i].winName);
+    //        sessionStorage.setItem(key, JSON.stringify(stack.elements[i].entry));
+    //        ClientStorage.log(`serialize key:${key}.`);
+    //    }
     }
 
     static removeEntriesForFile(filePath) {
@@ -578,10 +567,16 @@ class ClientStorage {
         return keys;
     }
 
-    static savePrevPageBackground(html) {
+    static savePrevPageBackground(imageData) {
         const key = ClientStorage.makePrevPageBackgroundKey();
-        sessionStorage.setItem(key, html);
+        sessionStorage.setItem(key, imageData);
         ClientStorage.log(`savePrevPageBackground key:${key}.`);
+    }
+
+    static savePageBackground(url, winName, imageData) {
+        const key = ClientStorage.makeDisplayfileKey(url, winName);
+        sessionStorage.setItem(key, imageData);
+        ClientStorage.log(`savePageBackground key:${key}.`);
     }
 
     static getPrevPageBackground() {
@@ -590,22 +585,37 @@ class ClientStorage {
         return item ? item : '';
     }
 
-    static parseStackItem(jsonStr) {
-        let entry = {};
-        /*eslint-disable*/
-        try {
-            entry = JSON.parse(jsonStr);
-        }
-        catch (e) {
-            return {};
-        }
-        /*eslint-enable*/
-        return entry;
-    }
+    //static parseStackItem(jsonStr) {
+    //    let entry = {};
+    //    /*eslint-disable*/
+    //    try {
+    //        entry = JSON.parse(jsonStr);
+    //    }
+    //    catch (e) {
+    //        return {};
+    //    }
+    //    /*eslint-enable*/
+    //    return entry;
+    //}
 
     static makeDisplayfileKey(filePath, winName) {
-        let root = `${STORAGE_NS.DISPLAYFILE}${filePath}`;
+        const root = `${STORAGE_NS.DISPLAYFILE}${filePath}`;
         return winName ? `${root}/${winName}` : root;
+    }
+
+    static getDisplayfileStack(filePath) {
+        const stackKey = ClientStorage.makeDisplayfileStackKey(filePath);
+        return sessionStorage.getItem(stackKey);
+    }
+
+    static makeDisplayfileStackKey(filePath) {
+        const root = `${STORAGE_NS.DISPLAYFILE}${filePath}`;
+        return `${root}.stack`;
+    }
+
+    static setDisplayfileStack(filePath, value) {
+        const stackKey = ClientStorage.makeDisplayfileStackKey(filePath);
+        sessionStorage.setItem(stackKey, value);
     }
 
     static makePrevPageBackgroundKey() {
@@ -634,6 +644,11 @@ class ClientStorage {
             return null;
         }
         return validKey.substring(lastIndex + 1);
+    }
+
+    static getBackgroundImage(url, winName) {
+        const key = ClientStorage.makeDisplayfileKey(url, winName);
+        return sessionStorage.getItem(key);
     }
 
     static log(msg) {

@@ -26,6 +26,8 @@
     --dds-grid-col-width: 11px;
     --dds-grid-row-padding-top: 0.2em;
     --dds-grid-row-padding-bottom: 0.2em;
+    --main-window-background: url();
+    --main-window-background-position: left top;
 }
 
 /*-------------------------------------------*\
@@ -113,6 +115,15 @@
 
 .display-element-uninitialized {
     visibility: hidden;
+}
+
+.display-element-initialized {
+    background-image: var(--main-window-background);
+    background-repeat: no-repeat;
+    background-size: auto, auto;
+    background-attachment: fixed;
+    background-position: var(--main-window-background-position);
+    overflow: hidden;
 }
 
 .dds-grid-row input, .dds-grid-row select, select, .dds-grid-row textarea {
@@ -321,8 +332,8 @@ body {
 
 \*-------------------------------------------*/
 .dds-window-background, .dds-window-background-inactive {
-    background-color: darkgray;
-    opacity: 0.2;
+    background-color: lightgray;
+    opacity: 0.8;
     pointer-events: none;
 }
 
