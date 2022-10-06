@@ -26,7 +26,7 @@ const WINDOW_CSS_CLASS = {
 
 const FLAG = {
     PAGE_HAS_WINDOWS : '__pageHasWindows__',
-    PAGE_JUST_OPENED :'__firstOuputOp__'
+    PAGE_JUST_OPENED :'__firstOutputOp__'
 };
 
 class DdsWindow {
