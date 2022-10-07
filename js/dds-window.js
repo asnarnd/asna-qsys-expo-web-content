@@ -8,9 +8,6 @@
 export { theWindow as DdsWindow};
 import { HtmlElementCapture } from './html-capture/html-element-capture.js';
 
-const CLASS_GRID_ROW = 'dds-grid-row';
-const CLASS_GRID_EMPTY_ROW = 'dds-grid-empty-row';
-
 const debugDdsWindow = false;
 const debugClientStorage = false;
 
@@ -19,16 +16,15 @@ import { Base64 } from './base-64.js';
 import { StringExt } from './string.js';
 
 const WINDOW_CSS_CLASS = {
-    // PAGE_BACKGROUND: 'dds-window-background',
-    WINPOPUP: 'dds-window-popup' //,
-    // INACTIVE_BACKDROP: 'dds-window-popup-inactive',
-    // PAGE_INACTIVE_BACKGROUND: 'dds-window-background-inactive'
+    WINPOPUP: 'dds-window-popup'
 };
 
 const FLAG = {
     PAGE_HAS_WINDOWS : '__pageHasWindows__',
     PAGE_JUST_OPENED :'__firstOuputOp__'
 };
+
+const NEXT_BACKGROUND_IMAGE_NAME = '*NEXT';
 
 class DdsWindow {
     init(form) {
@@ -42,22 +38,28 @@ class DdsWindow {
         this.htmlToImageStyle = DdsWindow.calcHtmlToImageStyle();
 
         if (!this.pageHasWindows) {
+            ClientStorage.purgeWinStack();
             return;
         }
 
+        DdsWindow.log(`** DdsWindow.init **`);
+
         const url = window.location.pathname;
         if ((this.pageJustOpened = this.getBooleanFlag(form, FLAG.PAGE_JUST_OPENED))) {
-            ; // Bug in QSys.Expo ClientStorage.removeEntriesForFile(url);
+            DdsWindow.log(`init   FLAG.PAGE_JUST_OPENED`);
+            ClientStorage.removeEntriesForFile(url);
+        }
+        else {
+            DdsWindow.log(`init   WE HAVE SEEN this page: ${url}`);
         }
 
         this.activeWindowRecord = this.getMainWindowRecordSpec(form);
-    //    if (!this.activeWindowRecord) {
-    //        ClientStorage.removeEntriesForFile(url);
-    //    }
         if (this.activeWindowRecord) {
+            DdsWindow.log(`init  loadStackForFile`);
             this.winRestoreStack = ClientStorage.loadStackForFile(url);
         }
         else {
+            DdsWindow.log(`init  not a WINDOW, clear cache!`);
             ClientStorage.removeEntriesForFile(url);
         }
     }
@@ -76,14 +78,17 @@ class DdsWindow {
     pushRestoreWindow(winName) {
         if (!this.winRestoreStack) {
             this.winRestoreStack = new RestoreStack(winName);
+            DdsWindow.log(`pushRestoreWindow (New RestoreStack)    Push: ${winName}`);
         }
         else {
             this.winRestoreStack.pushWindow(winName);
+            DdsWindow.log(`pushRestoreWindow Push: ${winName} Current stack: ${this.winRestoreStack.getAsList()}`);
         }
     }
 
     serializeWinRestoreStack() {
         if (this.winRestoreStack === null) {
+            DdsWindow.log(`serializeWinRestoreStack (Stack does not exist.)`);
             return;
         }
         const url = window.location.pathname;
@@ -99,7 +104,7 @@ class DdsWindow {
         return el.value.toLowerCase() === 'true';
     }
 
-    restoreWindowPrevPage(/*form, mainPanel*/) {
+    restoreWindowPrevPage() {
         if (!this.activeWindowRecord) {
             return;
         }
@@ -107,21 +112,33 @@ class DdsWindow {
         const url = window.location.pathname;
         const winName = this.activeWindowRecord.getAttribute(AsnaDataAttrName.RECORD);
 
-        if (!winName) {
+        if (!winName || this.winRestoreStack == null ) {
             return;
         }
 
-        let imgData = ClientStorage.getBackgroundImage(url, winName);
-        if (!imgData) {
-            if (this.winRestoreStack) {
-                const url = window.location.pathname;
-                const winName = this.winRestoreStack.popGE();
-                imgData = ClientStorage.getBackgroundImage(url, winName);
-                ClientStorage.serializeStackForFile(url, this.winRestoreStack);
+        let imgData = null;
+        let winStackDirty = false;
+
+        if (this.winRestoreStack.isEmpty()) {
+            imgData = ClientStorage.copyPrevPageBackgroundTo(url, NEXT_BACKGROUND_IMAGE_NAME);
+            if (imgData) {
+                this.pushRestoreWindow(winName);
+                winStackDirty = true;
             }
-            if (!imgData) {
-                imgData = ClientStorage.getPrevPageBackground();
+        }
+        else {
+            imgData = ClientStorage.getNamedPageBackground(url, NEXT_BACKGROUND_IMAGE_NAME);
+            if (imgData) {
+                ClientStorage.savePageBackground(url, winName, imgData);
+                if (!this.winRestoreStack.find(winName)) {
+                    this.pushRestoreWindow(winName);
+                    winStackDirty = true;
+                }
             }
+        }
+
+        if (winStackDirty) {
+            this.serializeWinRestoreStack();
         }
 
         if (imgData) {
@@ -227,43 +244,6 @@ class DdsWindow {
         return null;
     }
 
-    //createInactivePopup(form, htmlBackdrop, htmlWin, zIndex) {
-    //    if (htmlBackdrop) {
-    //        const wrapper = document.createElement('div');
-    //        wrapper.innerHTML = htmlBackdrop; // Not supposed to have input elements ...
-    //        document.body.appendChild(wrapper);
-    //        const backDrop = wrapper.firstChild;
-    //        backDrop.className = WINDOW_CSS_CLASS.INACTIVE_BACKDROP;
-    //    }
-
-    //    if (htmlWin) {
-    //        const mainEl = DdsWindow.queryFormMainElement(form);
-
-    //        if (!mainEl || !mainEl.parentElement) {
-    //            return;
-    //        }
-
-    //        const inactivePopup = document.createElement('div');
-    //        inactivePopup.style.position = 'absolute';
-    //        inactivePopup.className = WINDOW_CSS_CLASS.PAGE_INACTIVE_BACKGROUND;
-
-    //        const manipulate = new BackDOM_Manipulator();
-    //        const mainContainer = mainEl.parentElement;
-    //        const mainRect = mainContainer.getBoundingClientRect();
-
-    //        const style = inactivePopup.style;
-    //        style.zIndex = zIndex;
-    //        style.left = mainRect.left + 'px';
-    //        style.top = mainRect.top + 'px';
-    //        style.width = mainRect.width + 'px';
-    //        style.height = mainRect.height + 'px';
-
-    //        inactivePopup.innerHTML = manipulate.makeReadOnly(htmlWin);
-    //        document.body.appendChild(inactivePopup);
-    //        inactivePopup.removeAttribute(AsnaDataAttrName.WINDOW);
-    //    }
-    //}
-
     prepareForSubmit(form, htmlToImageCompleteEvent, htmlToImageFilterEvent) {
         if (typeof MonarchPageSavingForPopup === 'function') { // Notify user-code
             MonarchPageSavingForPopup();
@@ -279,15 +259,10 @@ class DdsWindow {
     }
 
     completePrepareSubmit(mostRecentBackgroundImageData) {
-        if (this.activeWindowRecord) {
-            const url = window.location.pathname;
-            const winName = this.activeWindowRecord.getAttribute(AsnaDataAttrName.RECORD);
+        DdsWindow.log(`completePrepareSubmit - Got a new Image!`);
 
-            if (!ClientStorage.getBackgroundImage(url, winName)) { // Save if not already there.
-                ClientStorage.savePageBackground(url, winName, mostRecentBackgroundImageData);
-                this.pushRestoreWindow(winName);
-            }
-            this.serializeWinRestoreStack();
+        if (this.activeWindowRecord) {
+            ClientStorage.savePageBackground(window.location.pathname, NEXT_BACKGROUND_IMAGE_NAME, mostRecentBackgroundImageData);
         }
         else {
             ClientStorage.savePrevPageBackground(mostRecentBackgroundImageData);
@@ -371,39 +346,6 @@ class DdsWindow {
     }
 }
 
-//class DOM_Extractor {
-//    getMainInnerHTML(form) {
-//        const mainEl = DdsWindow.queryFormMainElement(form);
-//        if (!mainEl) {
-//            return {};
-//        }
-//        const frag = document.createRange().createContextualFragment(mainEl.innerHTML);
-//        const div = document.createElement('div');
-//        div.appendChild(frag);
-//        return div.innerHTML;
-//    }
-//}
-
-//class BackDOM_Manipulator {
-//    makeReadOnly(html) {
-//        const frag = document.createRange().createContextualFragment(html);
-
-//        const named = frag.querySelectorAll('*[name]');
-//        for (let i = 0, l = named.length; i < l; i++) {
-//            const input = named[i];
-//            if (input.name) {
-//                input.removeAttribute('name');
-//            }
-//            input.setAttribute( 'tabIndex', '0');
-//        }
-
-//        const div = document.createElement('div');
-//        div.appendChild(frag);
-//        return div.innerHTML;
-
-//    }
-//}
-
 const STORAGE_NS = {
     DISPLAYFILE: 'ASNA.DisplayFile',
     BACKGROUND: 'ASNA.PrevPage.Background'
@@ -411,7 +353,7 @@ const STORAGE_NS = {
 
 class RestoreStack {
     constructor(list) {
-        this.elements = list.split(',');
+        this.elements = list ? list.split(',') : null;
     }
 
     getAsList() {
@@ -435,113 +377,51 @@ class RestoreStack {
         if (!this.elements)
             this.elements = [];
 
-//        const i = this.find(winName);
-//        if (i>=0) {
-//            this.remove(i); 
-//        }
-
         this.elements.push(winName);
     }
 
-    popGE(/*index*/) {
-//        let newElements = [];
-//        for (let i = 0, l = this.elements.length; i < l; i++) {
-//            const arrayElement = this.elements[i];
-//            if (arrayElement.entry.index >= index) {
-//                break;
-//            }
-//            newElements.push(arrayElement);
-//        }
+    find(winName) {
+        if (this.isEmpty()) {
+            return false;
+        }
 
-//        this.elements = newElements; 
-        return this.isEmpty() ? null : this.elements.pop();
+        for (let i = 0, l = this.elements.length; i < l; i++) {
+            if (this.elements[i] == winName) {
+                return true;
+            }
+        }
+        return false;
     }
 
-//    top() {
-//        return this.elements.length > 0 ? this.elements[this.elements.length - 1] : null;
-//    }
-
-//    find(winName) {
-//        for (let i = 0, l = this.elements.length; i < l; i++) {
-//            const arrayElement = this.elements[i];
-//            if (arrayElement.winName === winName) {
-//                return i;
-//            }
-//        }
-
-//        return -1;
-//    }
-
-//    remove(index) {
-//        let newElements = [];
-//        for (let i = 0, l = this.elements.length; i < index && i < l; i++) {
-//            newElements.push(this.elements[i]);
-//        }
-//        for (let i = index + 1, l = this.elements.length; i < l; i++) {
-//            newElements.push(this.elements[i]);
-//        }
-
-//        this.elements = newElements; 
-//    }
-
-//    static makeEntry(index, htmlBackground, arrayWinBackdrop ) {
-//        let entry = {
-//            htmlBackground: htmlBackground,
-//            win: arrayWinBackdrop,
-//            index: index
-//        };
-
-//        return entry;
-//    }
-
-//    static makeArrayElement(winName, entry) {
-//        return {
-//            winName: winName,
-//            entry: entry
-//        };
-//    }
-
-//    static makeWinBackdropEntry(htmlWin/*, htmlBackdrop*/) {
-//        return {
-//            htmlWin: htmlWin,
-//            // htmlBackdrop: htmlBackdrop
-//        };
-//    }
+    getTop() {
+        if (this.isEmpty()) {
+            return null;
+        }
+        return this.elements[this.elements.length-1];
+    }
 }
 
 class ClientStorage {
     static loadStackForFile(filePath) {
         const stackList = ClientStorage.getDisplayfileStack(filePath);
-        //for (let i = 0, l = keys.length; i < l; i++) {
-        //    const key = keys[i];
-        //    const val = sessionStorage.getItem(key);
-    //        if (val) {
-    //            const winName = ClientStorage.winNameFromKey(key);
-    //            stack.push(RestoreStack.makeArrayElement( winName, ClientStorage.parseStackItem(val)) );
-    //            ClientStorage.log(`loadStackForFile key:${key}.`);
-    //        }
-        //}
 
         if (stackList) {
     //        const sorted = stack.sort((a, b) => a.entry.index - b.entry.index);
+
+            ClientStorage.log(`loadStackForFile loaded: ${stackList}`);
             return new RestoreStack(stackList); // sorted);
         }
 
-       return  null;
+        ClientStorage.log(`Empty stack for: ${filePath}`);
+        return new RestoreStack('');
     }
 
     static serializeStackForFile(filePath, restoreStack) {
-        // ClientStorage.removeEntriesForFile(filePath);
+        ClientStorage.log(`serializeStackForFile key:${filePath}.`);
         if (!restoreStack) {
             return;
         }
         ClientStorage.setDisplayfileStack(filePath, restoreStack.getAsList());
-
-    //    for (let i = 0, l = stack.elements.length; i < l; i++) {
-    //        const key = ClientStorage.makeDisplayfileKey(filePath, stack.elements[i].winName);
-    //        sessionStorage.setItem(key, JSON.stringify(stack.elements[i].entry));
-    //        ClientStorage.log(`serialize key:${key}.`);
-    //    }
     }
 
     static removeEntriesForFile(filePath) {
@@ -552,6 +432,26 @@ class ClientStorage {
             sessionStorage.removeItem(key);
             ClientStorage.log(`removeEntriesForFile key:${key} removed.`);
         }
+    }
+
+    static purgeWinStack() {
+        const keys = ClientStorage.getSessionWinStack();
+        if (keys) {
+            for (let i = 0, l = keys.length; i < l; i++) {
+                sessionStorage.removeItem(keys[i]);
+            }
+        }
+    }
+
+    static getSessionWinStack() {
+        let keys = [];
+        for (let i = 0, l = sessionStorage.length; i < l; i++) {
+            const key = sessionStorage.key(i);
+            if (key.startsWith(STORAGE_NS.DISPLAYFILE)) {
+                keys.push(key);
+            }
+        }
+        return keys;
     }
 
     static getSessionKeysForFile(filePath) {
@@ -573,30 +473,42 @@ class ClientStorage {
         ClientStorage.log(`savePrevPageBackground key:${key}.`);
     }
 
+    static copyPrevPageBackgroundTo(url, winName) {
+        const prevPageBackground = this.getPrevPageBackground();
+        if (prevPageBackground) {
+            this.savePageBackground(url, winName, prevPageBackground);
+            return prevPageBackground;
+        }
+        return null;
+    }
+
+    static moveNamedPageBackgroundTo(url, imageName, winName) {
+        const sourcekey = ClientStorage.makeDisplayfileKey(url, imageName);
+        const destKey = ClientStorage.makeDisplayfileKey(url, winName);
+        const sourceImage = sessionStorage.getItem(sourcekey);
+        if (sourceImage) {
+            sessionStorage.setItem(destKey, sourceImage);
+        }
+        sessionStorage.removeItem(sourcekey);
+        return sourceImage;
+    }
+
     static savePageBackground(url, winName, imageData) {
         const key = ClientStorage.makeDisplayfileKey(url, winName);
         sessionStorage.setItem(key, imageData);
-        ClientStorage.log(`savePageBackground key:${key}.`);
+        ClientStorage.log(`savePageBackground key:${key} Win:${winName}.`);
     }
 
     static getPrevPageBackground() {
         const key = ClientStorage.makePrevPageBackgroundKey();
-        const item = sessionStorage.getItem(key);
-        return item ? item : '';
+        return sessionStorage.getItem(key);
     }
 
-    //static parseStackItem(jsonStr) {
-    //    let entry = {};
-    //    /*eslint-disable*/
-    //    try {
-    //        entry = JSON.parse(jsonStr);
-    //    }
-    //    catch (e) {
-    //        return {};
-    //    }
-    //    /*eslint-enable*/
-    //    return entry;
-    //}
+    static getNamedPageBackground(url, winName) {
+        const key = ClientStorage.makeDisplayfileKey(url, winName);
+        return sessionStorage.getItem(key);
+    }
+
 
     static makeDisplayfileKey(filePath, winName) {
         const root = `${STORAGE_NS.DISPLAYFILE}${filePath}`;
@@ -616,6 +528,7 @@ class ClientStorage {
     static setDisplayfileStack(filePath, value) {
         const stackKey = ClientStorage.makeDisplayfileStackKey(filePath);
         sessionStorage.setItem(stackKey, value);
+        ClientStorage.log(`setDisplayfileStack key:${stackKey} value:${value}`);
     }
 
     static makePrevPageBackgroundKey() {
