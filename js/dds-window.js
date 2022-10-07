@@ -59,7 +59,7 @@ class DdsWindow {
             DdsWindow.log(`init  loadStackForFile`);
             const winName = this.activeWindowRecord.getAttribute(AsnaDataAttrName.RECORD);
 
-            this.winRestoreStack = ClientStorage.loadStackForFile(url);
+            this.winRestoreStack = ClientStorage.loadWinStackForFile(url);
             if (this.winRestoreStack.find(winName)) {
                 this.winRestoreStack = ClientStorage.popWinBackgroundPagesGT(url, winName, this.winRestoreStack);
                 ClientStorage.removeNamedPageBackground(url, NEXT_BACKGROUND_IMAGE_NAME);
@@ -100,7 +100,7 @@ class DdsWindow {
             return;
         }
         const url = window.location.pathname;
-        ClientStorage.serializeStackForFile(url, this.winRestoreStack);
+        ClientStorage.serializeWinStackForFile(url, this.winRestoreStack);
     }
 
     getBooleanFlag(form, name) {
@@ -394,22 +394,13 @@ class RestoreStack {
         }
         return false;
     }
-
-    getTop() {
-        if (this.isEmpty()) {
-            return null;
-        }
-        return this.elements[this.elements.length-1];
-    }
 }
 
 class ClientStorage {
-    static loadStackForFile(filePath) {
+    static loadWinStackForFile(filePath) {
         const stackList = ClientStorage.getDisplayfileStack(filePath);
 
         if (stackList) {
-    //        const sorted = stack.sort((a, b) => a.entry.index - b.entry.index);
-
             ClientStorage.log(`loadStackForFile loaded: ${stackList}`);
             return new RestoreStack(stackList); // sorted);
         }
@@ -418,7 +409,7 @@ class ClientStorage {
         return new RestoreStack('');
     }
 
-    static serializeStackForFile(filePath, restoreStack) {
+    static serializeWinStackForFile(filePath, restoreStack) {
         ClientStorage.log(`serializeStackForFile key:${filePath}.`);
         if (!restoreStack) {
             return;
