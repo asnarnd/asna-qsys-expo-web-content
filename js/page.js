@@ -381,7 +381,7 @@ class Page {
             );
 
             let sflEndIcons = [];
-            if (icon && icon.el && icon.iconParms) {
+            if (icon && icon.el && icon.iconParms && icon.iconParms.title) {
                 sflEndIcons.push(icon);
             }
             if (sflEndIcons.length>0)

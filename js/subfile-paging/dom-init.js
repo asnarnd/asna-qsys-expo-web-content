@@ -70,7 +70,7 @@ class SubfileController {
                                         isAtBottom ? sflCtrlStore.sflEnd.textOn : sflCtrlStore.sflEnd.textOff,
                                         sflColRange
                                     );
-                                    if (icon && icon.el && icon.iconParms) {
+                                    if (icon && icon.el && icon.iconParms && icon.iconParms.title) {
                                         sflIcons.push(icon);
                                     }
                                 }
