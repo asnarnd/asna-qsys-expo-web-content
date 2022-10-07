@@ -103,9 +103,8 @@ class Page {
         }
 
         DdsGrid.truncateColumns(thisForm); // Do it after restorePopupPrevPage
-        if (/*this.winNewElements.background &&*/ this.winNewElements.popup) {
+        if (this.winNewElements.popup) {
             DdsWindow.positionPopup(thisForm, this.winNewElements);
-            // DdsWindow.serializeWinRestoreStack();
             DdsGrid.sendMainGridChildrenToFront(thisForm);
         }
 
@@ -494,7 +493,9 @@ class Page {
     handleHtmlToImageCompleteEvent(winBackgroundImageData) {
         let form = this.getForm();
 
-        DdsWindow.completePrepareSubmit(winBackgroundImageData);
+        if (winBackgroundImageData) {
+            DdsWindow.completePrepareSubmit(winBackgroundImageData);
+        }
 
         form.submit();
     }
