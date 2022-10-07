@@ -39,6 +39,7 @@ class DdsWindow {
 
         if (!this.pageHasWindows) {
             ClientStorage.purgeWinStack();
+            ClientStorage.purgePrevPageBackground();
             return;
         }
 
@@ -56,7 +57,14 @@ class DdsWindow {
         this.activeWindowRecord = this.getMainWindowRecordSpec(form);
         if (this.activeWindowRecord) {
             DdsWindow.log(`init  loadStackForFile`);
+            const winName = this.activeWindowRecord.getAttribute(AsnaDataAttrName.RECORD);
+
             this.winRestoreStack = ClientStorage.loadStackForFile(url);
+            if (this.winRestoreStack.find(winName)) {
+                this.winRestoreStack = ClientStorage.popWinBackgroundPagesGT(url, winName, this.winRestoreStack);
+                ClientStorage.removeNamedPageBackground(url, NEXT_BACKGROUND_IMAGE_NAME);
+                this.serializeWinRestoreStack();
+            }
         }
         else {
             DdsWindow.log(`init  not a WINDOW, clear cache!`);
@@ -122,6 +130,7 @@ class DdsWindow {
         if (this.winRestoreStack.isEmpty()) {
             imgData = ClientStorage.copyPrevPageBackgroundTo(url, NEXT_BACKGROUND_IMAGE_NAME);
             if (imgData) {
+                ClientStorage.savePageBackground(url, winName, imgData);
                 this.pushRestoreWindow(winName);
                 winStackDirty = true;
             }
@@ -134,6 +143,9 @@ class DdsWindow {
                     this.pushRestoreWindow(winName);
                     winStackDirty = true;
                 }
+            }
+            else {
+                imgData = ClientStorage.getNamedPageBackground(url, winName);
             }
         }
 
@@ -156,17 +168,7 @@ class DdsWindow {
         const winPopup = this.createWinPopup(highestZIndex + 1/*3*/);
         const winSpec = this.parseWinSpec();
         const winOffset = winSpec ? (winSpec.left /*- 1*/) * this.calcColWidth() : 0;
-
-        //if (topStackWindowEntry && topStackWindowEntry.win) {
-        //    DdsWindow.log(`restoreWindowPrevPage - win[${topStackWindowEntry.win.length}]`);
-
-        //    for (let i = 0, l = topStackWindowEntry.win.length; i < l; i++) {
-        //        const winBackdropEntry = topStackWindowEntry.win[i];
-        //        this.createInactivePopup(form, winBackdropEntry.htmlBackdrop, winBackdropEntry.htmlWin, highestZIndex + 1/*3*/);
-        //    }
-        //}
-
-        return { /*background: backDiv,*/ popup: winPopup, winOffset: winOffset };
+        return { popup: winPopup, winOffset: winOffset };
     }
 
     positionPopup(form, newElements, scroll ) {
@@ -473,6 +475,11 @@ class ClientStorage {
         ClientStorage.log(`savePrevPageBackground key:${key}.`);
     }
 
+    static purgePrevPageBackground() {
+        const key = ClientStorage.makePrevPageBackgroundKey();
+        sessionStorage.removeItem(key);
+    }
+
     static copyPrevPageBackgroundTo(url, winName) {
         const prevPageBackground = this.getPrevPageBackground();
         if (prevPageBackground) {
@@ -482,9 +489,14 @@ class ClientStorage {
         return null;
     }
 
-    static moveNamedPageBackgroundTo(url, imageName, winName) {
-        const sourcekey = ClientStorage.makeDisplayfileKey(url, imageName);
-        const destKey = ClientStorage.makeDisplayfileKey(url, winName);
+    static removeNamedPageBackground(url, imageName) {
+        const key = ClientStorage.makeDisplayfileKey(url, imageName);
+        sessionStorage.removeItem(key);
+    }
+
+    static moveNamedPageBackgroundTo(url, srcImageName, destImageName) {
+        const sourcekey = ClientStorage.makeDisplayfileKey(url, srcImageName);
+        const destKey = ClientStorage.makeDisplayfileKey(url, destImageName);
         const sourceImage = sessionStorage.getItem(sourcekey);
         if (sourceImage) {
             sessionStorage.setItem(destKey, sourceImage);
@@ -562,6 +574,29 @@ class ClientStorage {
     static getBackgroundImage(url, winName) {
         const key = ClientStorage.makeDisplayfileKey(url, winName);
         return sessionStorage.getItem(key);
+    }
+
+    static popWinBackgroundPagesGT(url, winName, winRestoreStack) {
+        const stack = winRestoreStack.elements;
+        let newStack = [];
+        let toRemove = [];
+        for (let i = 0, l = stack.length, indexWinName = -1; i < l; i++) {
+            if (stack[i] == winName) {
+                indexWinName = i;
+            }
+            if (indexWinName < 0 || i <= indexWinName)
+                newStack.push(stack[i]);
+            else if (i> indexWinName)
+                toRemove.push(stack[i]);
+        }
+
+        for (let i = 0, l = toRemove.length; i < l; i++) {
+            const key = ClientStorage.makeDisplayfileKey(url, toRemove[i]);
+            sessionStorage.removeItem(key);
+        }
+
+        winRestoreStack.elements = newStack;
+        return winRestoreStack;
     }
 
     static log(msg) {
