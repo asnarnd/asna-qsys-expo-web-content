@@ -101,25 +101,25 @@ class SubfileController {
     }
 
     static constrainRecordCueing(sflEl, withGridCol, sflColRange) {
-        const ROW_CUE_OFFSET_CLASS_PREFIX = 'dds-sfl-row-cue-offset-';
-        for (let i = 0; sflEl.classList.length>0 && i < 132; i++) {
-            sflEl.classList.remove(`${ROW_CUE_OFFSET_CLASS_PREFIX}${i + 1}`);
-        }
+        //const ROW_CUE_OFFSET_CLASS_PREFIX = 'dds-sfl-row-cue-offset-';
+        //for (let i = 0; sflEl.classList.length>0 && i < 132; i++) {
+        //    sflEl.classList.remove(`${ROW_CUE_OFFSET_CLASS_PREFIX}${i + 1}`);
+        //}
 
-        if (!(sflColRange.max && sflColRange.min && sflColRange.max > sflColRange.min)) {
-            return;
-        }
+        //if (!(sflColRange.max && sflColRange.min && sflColRange.max > sflColRange.min)) {
+        //    return;
+        //}
 
         const sflRowWidth = sflColRange.max - sflColRange.min;
-        const left = sflColRange.min - 1;
+        //const left = sflColRange.min - 1;
 
-        for (let i = 0, l = withGridCol.length; i < l; i++) {
-            SubfileController.offsetGridCol(withGridCol[i], -left);
-        }
+        //for (let i = 0, l = withGridCol.length; i < l; i++) {
+        //    SubfileController.offsetGridCol(withGridCol[i], -left);
+        //}
 
-        if (left > 0) {
-            sflEl.classList.add(`${ROW_CUE_OFFSET_CLASS_PREFIX}${left}`);
-        }
+        //if (left > 0) {
+        //    sflEl.classList.add(`${ROW_CUE_OFFSET_CLASS_PREFIX}${left}`);
+        //}
         sflEl.style.width = `calc(var(--dds-grid-col-width)*${sflRowWidth})`; 
     }
 
