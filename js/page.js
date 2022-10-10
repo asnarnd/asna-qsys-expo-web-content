@@ -73,7 +73,6 @@ class Page {
 
         DdsWindow.init(thisForm);
 
-        DdsGrid.addWinPopupCorners(DdsWindow.activeWindowRecord);
         DdsGrid.completeGridRows(thisForm, DdsWindow.activeWindowRecord);
         this.stretchConstantsText();
         this.addOnClickPushKeyEventListener();
@@ -96,23 +95,23 @@ class Page {
 
         this.mainPanel = this.getMainPanel(thisForm);
 
-        this.winNewElements = {};
+        this.winPopup = null;
         if (DdsWindow.activeWindowRecord!==null) {
             DdsWindow.restoreWindowPrevPage();
-            this.winNewElements = DdsWindow.initPopup();
+            DdsGrid.setPageHeight(thisForm);
+            this.winPopup = DdsWindow.initPopup(thisForm);
         }
 
-        DdsGrid.truncateColumns(thisForm); // Do it after restorePopupPrevPage
-        if (this.winNewElements.popup) {
-            DdsWindow.positionPopup(thisForm, this.winNewElements);
-            DdsGrid.sendMainGridChildrenToFront(thisForm);
+        DdsGrid.truncateColumns(thisForm); // Do it after restoreWindowPrevPage
+        if (this.winPopup) {
+            DdsGrid.moveRecordsToPopup(thisForm, this.winPopup);
         }
 
         window.addEventListener('resize', this.handleWindowResizeEvent, false);
 
-        if (this.mainPanel) {
-            this.mainPanel.addEventListener('scroll', this.handleMainPanelScrollEvent, false);
-        }
+        //if (this.mainPanel) {
+        //    this.mainPanel.addEventListener('scroll', this.handleMainPanelScrollEvent, false);
+        //}
 
         Page.setupAutoPostback(thisForm, this.aidKeyBitmap);
         Page.setupLeftPad(thisForm);
@@ -257,7 +256,7 @@ class Page {
         if (!this.winNewElements || !(this.winNewElements.background && this.winNewElements.backdrop)) {
             return;
         }
-        DdsWindow.positionPopup(this.getForm(), this.winNewElements);
+        // DdsWindow.positionPopup(this.getForm(), this.winNewElements);
     }
 
     handleMainPanelScrollEvent(event) {
@@ -407,9 +406,9 @@ class Page {
 
         */
 
-        if (DdsWindow.activeWindowRecord !== null) {
-            DdsGrid.sendMainGridChildrenToFront(form);
-        }
+        //if (DdsWindow.activeWindowRecord !== null) {
+        //    DdsGrid.sendMainGridChildrenToFront(form);
+        //}
 
         if (typeof (MonarchSubfilePageChanged) === 'function') {   // Notify user-code
             MonarchSubfilePageChanged(res.request.recordName, sflEl, res.request.from, res.request.request.to - 1, res.request.mode);
@@ -632,7 +631,7 @@ class Page {
             this.iconCache.update(res.shape);
         }
 
-        const highestZIndex = DdsWindow.calcHighestZIndex();
+        // const highestZIndex = DdsWindow.calcHighestZIndex();
 
         for (let i = 0, l = res.request.iconForElement.length; i < l; i++ ) {
             const icon = res.request.iconForElement[i];
@@ -643,9 +642,9 @@ class Page {
                     Icons.appendSvgContent(el, shape, el.getAttribute(AsnaDataAttrName.ICON_INTERNAL_COLOR), el.getAttribute(AsnaDataAttrName.ICON_INTERNAL_TITLE));
                     el.removeAttribute(AsnaDataAttrName.ICON_INTERNAL_COLOR);
                     el.removeAttribute(AsnaDataAttrName.ICON_INTERNAL_TITLE);
-                    if (DdsWindow.pageHasWindows) {
-                        el.style.zIndex = highestZIndex +3;
-                    }
+                    //if (DdsWindow.pageHasWindows) {
+                    //    el.style.zIndex = highestZIndex +3;
+                    //}
                 }
             }
         }

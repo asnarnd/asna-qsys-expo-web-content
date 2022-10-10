@@ -14,6 +14,7 @@ const debugClientStorage = false;
 import { AsnaDataAttrName } from '../js/asna-data-attr.js';
 import { Base64 } from './base-64.js';
 import { StringExt } from './string.js';
+import { DdsGrid } from './dds-grid.js';
 
 const WINDOW_CSS_CLASS = {
     WINPOPUP: 'dds-window-popup'
@@ -158,17 +159,18 @@ class DdsWindow {
         }
     }
 
-    initPopup() {
+    initPopup(form) {
         if (!this.activeWindowRecord) {
             return {};
         }
 
-        const highestZIndex = this.calcHighestZIndex();
-
-        const winPopup = this.createWinPopup(highestZIndex + 1/*3*/);
-        const winSpec = this.parseWinSpec();
-        const winOffset = winSpec ? (winSpec.left /*- 1*/) * this.calcColWidth() : 0;
-        return { popup: winPopup, winOffset: winOffset };
+        const mainEl = form.querySelector('main[role=main]');
+        const winPopup = this.createWinPopup(mainEl);
+        if (winPopup) {
+            mainEl.appendChild(winPopup);
+        }
+            
+        return winPopup;
     }
 
     positionPopup(form, newElements, scroll ) {
@@ -196,7 +198,7 @@ class DdsWindow {
         }
     }
 
-    createWinPopup(zIndex) {
+    createWinPopup(mainEl) {
         if (!this.activeWindowRecord) {
             return null;
         }
@@ -205,29 +207,30 @@ class DdsWindow {
         const winSpec = this.parseWinSpec();
 
         winPopup.className = WINDOW_CSS_CLASS.WINPOPUP;
-        winPopup.style.zIndex = zIndex;
+        const rowHeight = DdsGrid.calcRowHeight(mainEl);
+        const colWidth = DdsGrid.calcColWidth(mainEl);
 
-        if (this.topLeftCorner && this.bottomRightCorner) {
-            const leftTopRect = this.topLeftCorner.getBoundingClientRect();
-            const bottomRightRect = this.bottomRightCorner.getBoundingClientRect();
+        const padding = this.calcRowPadding();
+        const headerHeight = this.calcWindowHeaderHeight();
+        const border = this.calcPopupBorderWidth();
 
-            const padding = this.calcRowPadding();
-            const headerHeight = this.calcWindowHeaderHeight();
-            const border = this.calcPopupBorderWidth();
-            const cellH = bottomRightRect.height - 1;
+        const left = winSpec.left * colWidth;
+        const top = (winSpec.top * rowHeight ) - (headerHeight + padding.top + padding.bottom);
+        const width = (winSpec.width * colWidth) + (2 * border);
+        const height = (winSpec.height * rowHeight) + (headerHeight + padding.top + padding.bottom);
 
-            const top = leftTopRect.y - (headerHeight + padding.top + padding.bottom);
-            const width = ((bottomRightRect.x + (bottomRightRect.width - 1) - leftTopRect.x) - 2 * border)-1;
-            const height = (((bottomRightRect.y + cellH - leftTopRect.y) - 2 * border) - 1) - cellH;
-            winPopup.style.top = `${top}px`;
-            winPopup.style.width = `${width}px`;
-            winPopup.style.height = `${height}px`;
-        }
+        winPopup.style.left = `${left}px`;
+        winPopup.style.top = `${top}px`;
+        winPopup.style.width = `${width}px`;
+        winPopup.style.height = `${height}px`;
 
         const header = document.createElement('div');
         header.innerText = winSpec.title;
         header.className = 'dds-window-header';
         winPopup.appendChild(header);
+        const recordCointaner = document.createElement('div');
+        recordCointaner.className = 'dds-window-popup-record-container';
+        winPopup.appendChild(recordCointaner);
 
         return winPopup;
     }
@@ -318,17 +321,17 @@ class DdsWindow {
         return null;
     }
 
-    calcHighestZIndex() {
-        let highestZIndex = 0;
+    //calcHighestZIndex() {
+    //    let highestZIndex = 0;
 
-        highestZIndex = Math.max(
-            highestZIndex,
-            ...Array.from(document.querySelectorAll("body *:not([data-highest]):not(.yetHigher)"), (elem) => parseFloat(getComputedStyle(elem).zIndex))
-                .filter((zIndex) => !isNaN(zIndex))
-        );
+    //    highestZIndex = Math.max(
+    //        highestZIndex,
+    //        ...Array.from(document.querySelectorAll("body *:not([data-highest]):not(.yetHigher)"), (elem) => parseFloat(getComputedStyle(elem).zIndex))
+    //            .filter((zIndex) => !isNaN(zIndex))
+    //    );
 
-        return highestZIndex;
-    }
+    //    return highestZIndex;
+    //}
 
     setCorners(topLeft, bottomRight) {
         this.topLeftCorner = topLeft;
