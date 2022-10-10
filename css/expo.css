@@ -331,13 +331,13 @@ body {
     DDS Window (popup)
 
 \*-------------------------------------------*/
-.dds-window-background, .dds-window-background-inactive {
+.dds-window-background {
     background-color: lightgray;
     opacity: 0.8;
     pointer-events: none;
 }
 
-.dds-window-popup, .dds-window-popup-inactive {
+.dds-window-popup {
     position: absolute;
     background: var(--popup-background);
     display: block;
@@ -349,10 +349,6 @@ body {
 .dds-window-popup {
     border-color: blue;
     border-width: medium;
-}
-
-.dds-window-popup-inactive {
-    color: lightgrey; /* Inactive Window Title */
 }
 
 .dds-window-header {
