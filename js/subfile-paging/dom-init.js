@@ -57,7 +57,9 @@ class SubfileController {
                                 const sflColRange = SubfileController.calcSflMinMaxColRange(withGridCol);
 
                                 if (SubfileController.addMouseCueEvents(sflEl, initData.inputBehaviour)) {
-                                    SubfileController.constrainRecordCueing(sflEl, withGridCol, sflColRange);
+                                    if (!DdsWindow.pageHasWindows) {
+                                        SubfileController.constrainRecordCueing(sflEl, withGridCol, sflColRange);
+                                    }
                                 }
                                 SubfileController.removeRowGap(sflEl);
                                 sflCtrlStore.fldDrop.foldLinesPerRecord = SubfileController.querySubfileFoldLinesPerRecord(sflEl);
