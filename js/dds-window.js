@@ -7,6 +7,7 @@
 
 export { theWindow as DdsWindow};
 import { HtmlElementCapture } from './html-capture/html-element-capture.js';
+import { DomEvents } from './dom-events.js';
 
 const debugDdsWindow = false;
 const debugClientStorage = false;
@@ -28,6 +29,14 @@ const FLAG = {
 const NEXT_BACKGROUND_IMAGE_NAME = '*NEXT';
 
 class DdsWindow {
+    constructor() {
+        this.winPopupHeader = null;
+
+        this.handleDragStartEvent = this.handleDragStartEvent.bind(this);
+        this.handleDragOverEvent = this.handleDragOverEvent.bind(this);
+        this.handleDragEndEvent = this.handleDragEndEvent.bind(this);
+    }
+
     init(form) {
         this.activeWindowRecord = null;
         this.topLeftCorner = null;
@@ -217,20 +226,24 @@ class DdsWindow {
         const left = winSpec.left * colWidth;
         const top = (winSpec.top * rowHeight ) - (headerHeight + padding.top + padding.bottom);
         const width = (winSpec.width * colWidth) + (2 * border);
-        const height = headerHeight + (winSpec.height * rowHeight) + ( + padding.top + padding.bottom);
+        const height = headerHeight + (winSpec.height * rowHeight) + (padding.top + padding.bottom);
 
         winPopup.style.left = `${left}px`;
         winPopup.style.top = `${top}px`;
         winPopup.style.width = `${width}px`;
         winPopup.style.height = `${height}px`;
 
-        const header = document.createElement('div');
-        header.innerText = winSpec.title;
-        header.className = 'dds-window-header';
-        winPopup.appendChild(header);
+        this.winPopupHeader = document.createElement('div');
+        this.winPopupHeader.innerText = winSpec.title;
+        this.winPopupHeader.className = 'dds-window-header';
+        winPopup.appendChild(this.winPopupHeader);
         const recordCointaner = document.createElement('div');
         recordCointaner.className = 'dds-window-popup-record-container';
         winPopup.appendChild(recordCointaner);
+
+        this.winPopupHeader.addEventListener('dragstart', this.handleDragStartEvent, false);
+        document.addEventListener('dragover', this.handleDragOverEvent, false);
+        this.winPopupHeader.addEventListener('dragend', this.handleDragEndEvent, false);
 
         return winPopup;
     }
@@ -321,23 +334,6 @@ class DdsWindow {
         return null;
     }
 
-    //calcHighestZIndex() {
-    //    let highestZIndex = 0;
-
-    //    highestZIndex = Math.max(
-    //        highestZIndex,
-    //        ...Array.from(document.querySelectorAll("body *:not([data-highest]):not(.yetHigher)"), (elem) => parseFloat(getComputedStyle(elem).zIndex))
-    //            .filter((zIndex) => !isNaN(zIndex))
-    //    );
-
-    //    return highestZIndex;
-    //}
-
-    setCorners(topLeft, bottomRight) {
-        this.topLeftCorner = topLeft;
-        this.bottomRightCorner = bottomRight;
-    }
-
     static queryFormMainElement(form) {
         return form.querySelector('main[role=main]');
     }
@@ -348,6 +344,27 @@ class DdsWindow {
         }
 
         console.log(`DdsWindow::${msg}`);
+    }
+
+    handleDragStartEvent(event) {
+        this.dragging = { mouseStartX: event.clientX, mouseStartY: event.clientY };
+    }
+
+    handleDragOverEvent(event) {
+        event.dataTransfer.dropEffect = 'move';
+        DomEvents.cancelEvent(event);
+    }
+
+    handleDragEndEvent(event) {
+        let offsetX = this.dragging.mouseStartX - event.clientX;
+        let offsetY = this.dragging.mouseStartY - event.clientY;
+
+        const winPopup = this.winPopupHeader.parentElement;
+        winPopup.style.left = `${winPopup.getBoundingClientRect().left - offsetX}px`;
+        winPopup.style.top = `${winPopup.getBoundingClientRect().top - offsetY}px`;
+
+        DomEvents.cancelEvent(event);
+        delete this.dragging;
     }
 }
 

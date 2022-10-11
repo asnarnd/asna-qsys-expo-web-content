@@ -362,6 +362,7 @@ body {
     line-height: var(--popup-header-height);
     color: white;
     background-color: darkblue;
+    cursor: grab;
 }
 
 /*-------------------------------------------*\
