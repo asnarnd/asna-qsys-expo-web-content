@@ -347,17 +347,14 @@ body {
     border: var(--popup-border-width) solid var(--popup-background);
     border-radius: 5px;
     text-align: center;
+    border-color: blue;
+    border-width: medium;
 }
 
 .dds-window-popup-record-container {
     background: var(--popup-background);
     width: 100%;
     height:100%;
-}
-
-.dds-window-popup {
-    border-color: blue;
-    border-width: medium;
 }
 
 .dds-window-header {
