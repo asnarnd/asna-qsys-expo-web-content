@@ -217,7 +217,7 @@ class DdsWindow {
         const left = winSpec.left * colWidth;
         const top = (winSpec.top * rowHeight ) - (headerHeight + padding.top + padding.bottom);
         const width = (winSpec.width * colWidth) + (2 * border);
-        const height = (winSpec.height * rowHeight) + (headerHeight + padding.top + padding.bottom);
+        const height = headerHeight + (winSpec.height * rowHeight) + ( + padding.top + padding.bottom);
 
         winPopup.style.left = `${left}px`;
         winPopup.style.top = `${top}px`;

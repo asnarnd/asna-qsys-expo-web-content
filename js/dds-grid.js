@@ -50,13 +50,6 @@ class DdsGrid {
                 }
                 const range = rangeVal.split('-');
                 let rowVal = parseInt(range[0], 10);
-                let winSpecs = null;
-                if (activeWindowRecord && activeWindowRecord.contains(row)) {
-                    winSpecs = DdsWindow.parseWinSpec();
-                    //if (winSpecs && winSpecs.top) {
-                    //    rowVal += winSpecs.top;
-                    //}
-                }
                 let emptyRowsBefore = rowVal - 1 - lastRowVal;
 
                 if (emptyRowsBefore > 0) {
@@ -68,9 +61,6 @@ class DdsGrid {
                 }
                 lastRowVal = range.length === 2 ? range[1] : range[0];
                 lastRowVal = parseInt(lastRowVal, 10);
-                if (winSpecs && winSpecs.top) {
-                    lastRowVal += winSpecs.top;
-                }
                 lastRow = row;
             }
         }
@@ -84,7 +74,8 @@ class DdsGrid {
                 }
             }
         }
-        // Note: For Page with active WINDOW, this is done later in setPageHeight()
+        // else
+        //    Note: For Page with active WINDOW, this is done later in setPageHeight()
 
         subfiles.forEach((sfl) => this.completeSubfileGridRows(sfl));
     }
@@ -92,7 +83,7 @@ class DdsGrid {
     setPageHeight(form) {
         const mainEl = form.querySelector('main[role=main]');
         if (mainEl) {
-            mainEl.style.height = `${DDS_FILE_LINES * this.calcRowHeight(mainEl)}px`;
+            mainEl.style.minHeight = `${DDS_FILE_LINES * this.calcRowHeight(mainEl)}px`;
         }
     }
 
