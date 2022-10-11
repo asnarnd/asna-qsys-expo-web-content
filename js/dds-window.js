@@ -241,6 +241,7 @@ class DdsWindow {
         recordCointaner.className = 'dds-window-popup-record-container';
         winPopup.appendChild(recordCointaner);
 
+        this.winPopupHeader.setAttribute('draggable', 'true');
         this.winPopupHeader.addEventListener('dragstart', this.handleDragStartEvent, false);
         document.addEventListener('dragover', this.handleDragOverEvent, false);
         this.winPopupHeader.addEventListener('dragend', this.handleDragEndEvent, false);

@@ -363,6 +363,7 @@ body {
     color: white;
     background-color: darkblue;
     cursor: grab;
+    user-select: none;
 }
 
 /*-------------------------------------------*\
