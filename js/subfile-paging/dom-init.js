@@ -300,7 +300,7 @@ class SubfileController {
         let iconName = isAtBottom ? ICON_NAME_NO_MORE : ICON_NAME_MORE;
 
         const iconRow = document.createElement('div');
-        iconRow.className = 'dds-grid-row dds-row-no-gap';
+        iconRow.className = EXPO_CLASS.GRID_ROW_NO_GAP;
         const span = document.createElement('span');
         span.className = 'dds-cells-suitable-for-icons';
         span.classList.add(isAtBottom ? 'sflend-bottom':'sflend-more');
