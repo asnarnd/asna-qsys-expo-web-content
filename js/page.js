@@ -366,8 +366,8 @@ class Page {
         const withGridCol = SubfileController.selectAllWithGridColumns(sflEl);
         const sflColRange = SubfileController.calcSflMinMaxColRange(withGridCol);
 
-        if (SubfileController.addMouseCueEvents(sflEl, sflCtrlStore.inputBehaviour)) {
-            SubfileController.constrainRecordCueing(sflEl, withGridCol, sflColRange);
+        if (SubfileController.addMouseCueEvents(sflEl, sflCtrlStore.inputBehaviour) && !DdsWindow.pageHasWindows) {
+            SubfileController.constrainRecordCueing(sflEl, sflColRange);
         }
 
         SubfileController.removeRowGap(sflEl);
