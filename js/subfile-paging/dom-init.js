@@ -56,10 +56,8 @@ class SubfileController {
                                 const withGridCol = SubfileController.selectAllWithGridColumns(sflEl);
                                 const sflColRange = SubfileController.calcSflMinMaxColRange(withGridCol);
 
-                                if (SubfileController.addMouseCueEvents(sflEl, initData.inputBehaviour)) {
-                                    if (!DdsWindow.pageHasWindows) {
-                                        SubfileController.constrainRecordCueing(sflEl, withGridCol, sflColRange);
-                                    }
+                                if (SubfileController.addMouseCueEvents(sflEl, initData.inputBehaviour) && !DdsWindow.pageHasWindows) {
+                                    SubfileController.constrainRecordCueing(sflEl, sflColRange);
                                 }
                                 SubfileController.removeRowGap(sflEl);
                                 sflCtrlStore.fldDrop.foldLinesPerRecord = SubfileController.querySubfileFoldLinesPerRecord(sflEl);
@@ -102,48 +100,19 @@ class SubfileController {
         return result;
     }
 
-    static constrainRecordCueing(sflEl, withGridCol, sflColRange) {
-        //const ROW_CUE_OFFSET_CLASS_PREFIX = 'dds-sfl-row-cue-offset-';
-        //for (let i = 0; sflEl.classList.length>0 && i < 132; i++) {
-        //    sflEl.classList.remove(`${ROW_CUE_OFFSET_CLASS_PREFIX}${i + 1}`);
-        //}
-
-        //if (!(sflColRange.max && sflColRange.min && sflColRange.max > sflColRange.min)) {
-        //    return;
-        //}
-
-        const sflRowWidth = sflColRange.max - sflColRange.min;
-        //const left = sflColRange.min - 1;
-
-        //for (let i = 0, l = withGridCol.length; i < l; i++) {
-        //    SubfileController.offsetGridCol(withGridCol[i], -left);
-        //}
-
-        //if (left > 0) {
-        //    sflEl.classList.add(`${ROW_CUE_OFFSET_CLASS_PREFIX}${left}`);
-        //}
-        sflEl.style.width = `calc(var(--dds-grid-col-width)*${sflRowWidth})`; 
-    }
-
-    static offsetGridCol(el, offset) {
-        const colSpan = SubfileController.getGridColStartEnd(el);
-        if (isNaN(colSpan.start) || isNaN(colSpan.end))
+    static constrainRecordCueing(sflEl, sflColRange) {
+        if (!sflColRange.max || !sflColRange.min || isNaN(sflColRange.max) || isNaN(sflColRange.min)) {
             return;
-        let newColStart = colSpan.start + offset;
-        const newColEnd = colSpan.end + offset;
-
-        if (newColStart === 0) {
-            newColStart = 1;
         }
-
-        el.style.gridColumn = `${newColStart} / ${newColEnd}`;
+        const sflRowWidth = sflColRange.max - sflColRange.min;
+        sflEl.style.width = `calc(var(--dds-grid-col-width)*${sflRowWidth})`; 
     }
 
     static calcSflMinMaxColRange(withGridCol) {
         let minCol = 999;
         let maxCol = 1;
         for (let i = 0, l = withGridCol.length; i < l; i++) {
-            const colSpan = SubfileController.getGridColStartEnd(withGridCol[i]);
+            const colSpan = DdsGrid.getGridColStartEnd(withGridCol[i]);
             if (!isNaN(colSpan.start)) {
                 minCol = Math.min(colSpan.start, minCol);
             }
@@ -154,25 +123,6 @@ class SubfileController {
         }
 
         return maxCol > minCol ? { min: minCol, max: maxCol } : {};
-    }
-
-    static getGridColStartEnd(el) {
-        const SPAN_ = 'span ';
-        const colStart = el.style.gridColumnStart;
-        let start = NaN, end = NaN;
-
-        if (colStart) { // assumed
-            start = parseInt(colStart);
-            const colEnd = el.style.gridColumnEnd;
-            if (colEnd) {
-                if (colEnd.startsWith && colEnd.startsWith(SPAN_)) {
-                    end = start + parseInt(colEnd.substring(SPAN_.length));
-                }
-                else
-                    end = parseInt(colEnd);
-            }
-        }
-        return { start: start, end: end };
     }
 
     static selectAllRows(sflEl) {
@@ -300,7 +250,7 @@ class SubfileController {
         let iconName = isAtBottom ? ICON_NAME_NO_MORE : ICON_NAME_MORE;
 
         const iconRow = document.createElement('div');
-        iconRow.className = EXPO_CLASS.GRID_ROW_NO_GAP;
+        iconRow.className = `${EXPO_CLASS.GRID_ROW} ${EXPO_CLASS.GRID_ROW_NO_GAP}`;
         const span = document.createElement('span');
         span.className = 'dds-cells-suitable-for-icons';
         span.classList.add(isAtBottom ? 'sflend-bottom':'sflend-more');

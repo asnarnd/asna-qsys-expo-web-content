@@ -7,7 +7,6 @@
 
 export { theDdsGrid as DdsGrid };
 
-import { DdsWindow } from '../js/dds-window.js';
 import { AsnaDataAttrName } from '../js/asna-data-attr.js';
 
 const DDS_FILE_LINES = 27;
@@ -204,18 +203,11 @@ class DdsGrid {
 
     truncateColumns(form) {
         let maxCol = this.calcMaxGridColumnEnd(form.querySelector(MAIN_SELECTOR));
-        if (!maxCol) {
+        if (!maxCol || isNaN(maxCol)) {
             return;
         }
 
-        const backWindows = document.querySelectorAll('.dds-window-background');
-        for (let i = 0, l = backWindows.length; i < l; i++) {
-            const maxWinGridCol = this.calcMaxGridColumnEnd(backWindows[i]);
-            maxCol = Math.max(maxCol, maxWinGridCol);
-        }
-
         if (maxCol > 80) {
-            // console.log(`Truncate to: ${maxCol}`);
             document.documentElement.style.setProperty('--dds-grid-columns', maxCol);
         }
     }
@@ -234,29 +226,41 @@ class DdsGrid {
         let maxCol = 0;
 
         for (let i = 0, l = elementsInlineStyle.length; i < l; i++) {
-            const style = elementsInlineStyle[i].style;
-            if (!style || !style.gridColumnEnd) {
+            const el = elementsInlineStyle[i];
+            if (!el.style) {
                 continue;
             }
-            let colEnd = parseInt(style.gridColumnEnd);
-            if ( isNaN(colEnd) ) {
-                const colStart = parseInt(style.gridColumnStart);
-                if ( !isNaN(colStart) ) {
-                    if (style.gridColumnEnd.startsWith && style.gridColumnEnd.startsWith('span')) {
-                        const span = parseInt(style.gridColumnEnd.substring(5));
-                        if (!isNaN(span) && span > 0) {
-                            colEnd = colStart + span;
-                        }
-                    }
-                }
-            }
-            if (!isNaN(colEnd)) {
-                maxCol = Math.max(maxCol, colEnd);
+
+            const gridStartEnd = this.getGridColStartEnd(el);
+            if (gridStartEnd && gridStartEnd.end && !isNaN(gridStartEnd.end)) {
+                maxCol = Math.max(maxCol, gridStartEnd.end);
             }
         }
 
         return maxCol;
     }
+
+    getGridColStartEnd(el) {
+        const SPAN_ = 'span ';
+        const colStart = el.style.gridColumnStart;
+        let start = NaN, end = NaN;
+
+        if (colStart) {
+            start = parseInt(colStart);
+            const colEnd = el.style.gridColumnEnd;
+            if (colEnd) {
+                if (colEnd.startsWith && colEnd.startsWith(SPAN_)) {
+                    if (!isNaN(start)) {
+                        end = start + parseInt(colEnd.substring(SPAN_.length));
+                    }
+                }
+                else
+                    end = parseInt(colEnd);
+            }
+        }
+        return { start: start, end: end };
+    }
+
 
     findSubfile(sflCtrlName, sflCtl) {
         if (!sflCtl) {
