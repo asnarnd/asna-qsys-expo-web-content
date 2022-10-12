@@ -102,9 +102,11 @@ class Page {
             this.winPopup = DdsWindow.initPopup(thisForm);
         }
 
-        DdsGrid.truncateColumns(thisForm); // Do it after restoreWindowPrevPage
         if (this.winPopup) {
             DdsGrid.moveRecordsToPopup(thisForm, this.winPopup);
+        }
+        else {
+            DdsGrid.truncateColumns(thisForm);
         }
 
         window.addEventListener('resize', this.handleWindowResizeEvent, false);

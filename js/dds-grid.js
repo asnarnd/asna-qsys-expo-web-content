@@ -234,11 +234,25 @@ class DdsGrid {
         let maxCol = 0;
 
         for (let i = 0, l = elementsInlineStyle.length; i < l; i++) {
-            let style = elementsInlineStyle[i].style;
+            const style = elementsInlineStyle[i].style;
             if (!style || !style.gridColumnEnd) {
                 continue;
             }
-            maxCol = Math.max(maxCol, style.gridColumnEnd);
+            let colEnd = parseInt(style.gridColumnEnd);
+            if ( isNaN(colEnd) ) {
+                const colStart = parseInt(style.gridColumnStart);
+                if ( !isNaN(colStart) ) {
+                    if (style.gridColumnEnd.startsWith && style.gridColumnEnd.startsWith('span')) {
+                        const span = parseInt(style.gridColumnEnd.substring(5));
+                        if (!isNaN(span) && span > 0) {
+                            colEnd = colStart + span;
+                        }
+                    }
+                }
+            }
+            if (!isNaN(colEnd)) {
+                maxCol = Math.max(maxCol, colEnd);
+            }
         }
 
         return maxCol;
