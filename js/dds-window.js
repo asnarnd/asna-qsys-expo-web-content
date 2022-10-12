@@ -348,7 +348,7 @@ class DdsWindow {
     }
 
     handleDragStartEvent(event) {
-        this.dragging = { mouseStartX: event.clientX, mouseStartY: event.clientY };
+        this.dragging = { mouseStartX: event.screenX, mouseStartY: event.screenY };
     }
 
     handleDragOverEvent(event) {
@@ -357,12 +357,15 @@ class DdsWindow {
     }
 
     handleDragEndEvent(event) {
-        let offsetX = this.dragging.mouseStartX - event.clientX;
-        let offsetY = this.dragging.mouseStartY - event.clientY;
+        let offsetX = this.dragging.mouseStartX - event.screenX;
+        let offsetY = this.dragging.mouseStartY - event.screenY;
 
         const winPopup = this.winPopupHeader.parentElement;
-        winPopup.style.left = `${winPopup.getBoundingClientRect().left - offsetX}px`;
-        winPopup.style.top = `${winPopup.getBoundingClientRect().top - offsetY}px`;
+        const currentLeft = parseFloat(winPopup.style.left);
+        const currentTop  = parseFloat(winPopup.style.top);
+
+        winPopup.style.left = `${currentLeft - offsetX}px`;
+        winPopup.style.top  = `${currentTop - offsetY}px`;
 
         DomEvents.cancelEvent(event);
         delete this.dragging;
