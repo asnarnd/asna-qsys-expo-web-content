@@ -6,9 +6,8 @@
  */
 
 export { theWindow as DdsWindow};
-
-const CLASS_GRID_ROW = 'dds-grid-row';
-const CLASS_GRID_EMPTY_ROW = 'dds-grid-empty-row';
+import { HtmlElementCapture } from './html-capture/html-element-capture.js';
+import { DomEvents } from './dom-events.js';
 
 const debugDdsWindow = false;
 const debugClientStorage = false;
@@ -16,20 +15,28 @@ const debugClientStorage = false;
 import { AsnaDataAttrName } from '../js/asna-data-attr.js';
 import { Base64 } from './base-64.js';
 import { StringExt } from './string.js';
+import { DdsGrid } from './dds-grid.js';
 
 const WINDOW_CSS_CLASS = {
-    PAGE_BACKGROUND: 'dds-window-background',
-    BACKDROP: 'dds-window-popup',
-    INACTIVE_BACKDROP: 'dds-window-popup-inactive',
-    PAGE_INACTIVE_BACKGROUND: 'dds-window-background-inactive'
+    WINPOPUP: 'dds-window-popup'
 };
 
 const FLAG = {
     PAGE_HAS_WINDOWS : '__pageHasWindows__',
-    PAGE_JUST_OPENED :'__firstOutputOp__'
+    PAGE_JUST_OPENED :'__firstOuputOp__'
 };
 
+const NEXT_BACKGROUND_IMAGE_NAME = '*NEXT';
+
 class DdsWindow {
+    constructor() {
+        this.winPopupHeader = null;
+
+        this.handleDragStartEvent = this.handleDragStartEvent.bind(this);
+        this.handleDragOverEvent = this.handleDragOverEvent.bind(this);
+        this.handleDragEndEvent = this.handleDragEndEvent.bind(this);
+    }
+
     init(form) {
         this.activeWindowRecord = null;
         this.topLeftCorner = null;
@@ -38,56 +45,72 @@ class DdsWindow {
 
         this.pageHasWindows = this.getBooleanFlag(form, FLAG.PAGE_HAS_WINDOWS);
 
+        this.htmlToImageStyle = DdsWindow.calcHtmlToImageStyle();
+
         if (!this.pageHasWindows) {
+            ClientStorage.purgeWinStack();
+            ClientStorage.purgePrevPageBackground();
             return;
         }
 
+        DdsWindow.log(`** DdsWindow.init **`);
+
+        const url = window.location.pathname;
         if ((this.pageJustOpened = this.getBooleanFlag(form, FLAG.PAGE_JUST_OPENED))) {
-            ClientStorage.removeEntriesForFile(window.location.pathname);
+            DdsWindow.log(`init   FLAG.PAGE_JUST_OPENED`);
+            ClientStorage.removeEntriesForFile(url);
+        }
+        else {
+            DdsWindow.log(`init   WE HAVE SEEN this page: ${url}`);
         }
 
         this.activeWindowRecord = this.getMainWindowRecordSpec(form);
         if (this.activeWindowRecord) {
-            this.winRestoreStack = ClientStorage.loadStackForFile(window.location.pathname); 
+            DdsWindow.log(`init  loadStackForFile`);
+            const winName = this.activeWindowRecord.getAttribute(AsnaDataAttrName.RECORD);
+
+            this.winRestoreStack = ClientStorage.loadWinStackForFile(url);
+            if (this.winRestoreStack.find(winName)) {
+                this.winRestoreStack = ClientStorage.popWinBackgroundPagesGT(url, winName, this.winRestoreStack);
+                ClientStorage.removeNamedPageBackground(url, NEXT_BACKGROUND_IMAGE_NAME);
+                this.serializeWinRestoreStack();
+            }
         }
         else {
-            ClientStorage.removeEntriesForFile(window.location.pathname);
+            DdsWindow.log(`init  not a WINDOW, clear cache!`);
+            ClientStorage.removeEntriesForFile(url);
         }
     }
 
-    pushRestoreWindow(winName, htmlBackground, htmlTopWin) {
-        const topWinBackdrop = document.querySelector(`[class=${WINDOW_CSS_CLASS.BACKDROP}]`); // Note: backdrop is not inside the form ...
+    static calcHtmlToImageStyle() {
+        const sampleEl = document.createElement("div");
+        sampleEl.className = 'dds-window-background';
+        const newChild = document.body.appendChild(sampleEl);
+        const cssStyle = window.getComputedStyle(sampleEl, null);
+        const style = { 'background-color': cssStyle['background-color'], opacity: cssStyle['opacity'] };
+        document.body.removeChild(newChild);
 
-        let winBackdrop = [];
+        return style;
+    }
 
-        const inactiveBackdrops = document.querySelectorAll(`[class=${WINDOW_CSS_CLASS.INACTIVE_BACKDROP}]`);
-        const inactiveWindows = document.querySelectorAll(`[class=${WINDOW_CSS_CLASS.PAGE_INACTIVE_BACKGROUND}]`);
-        
-        for (let i = 0, l = inactiveWindows.length; i < l; i++) {
-            const htmlWin = inactiveWindows[i].innerHTML;
-            const htmlBackDrop = i < inactiveBackdrops.length ? inactiveBackdrops[i].outerHTML : '';
-            const inactiveWinBackdropEntry = RestoreStack.makeWinBackdropEntry(htmlWin, htmlBackDrop);
-            winBackdrop.push(inactiveWinBackdropEntry);
+    pushRestoreWindow(winName) {
+        if (!this.winRestoreStack) {
+            this.winRestoreStack = new RestoreStack(winName);
+            DdsWindow.log(`pushRestoreWindow (New RestoreStack)    Push: ${winName}`);
         }
-
-        winBackdrop.push(RestoreStack.makeWinBackdropEntry(htmlTopWin, topWinBackdrop !== null ? topWinBackdrop.outerHTML : ''));
-
-        if (winBackdrop) {
-            if (!this.winRestoreStack) {
-                const newStack = [RestoreStack.makeArrayElement(winName, RestoreStack.makeEntry(0, htmlBackground, winBackdrop))];
-                this.winRestoreStack = new RestoreStack(newStack);
-            }
-            else {
-                this.winRestoreStack.pushWindow(winName, htmlBackground, winBackdrop);
-            }
+        else {
+            this.winRestoreStack.pushWindow(winName);
+            DdsWindow.log(`pushRestoreWindow Push: ${winName} Current stack: ${this.winRestoreStack.getAsList()}`);
         }
     }
 
     serializeWinRestoreStack() {
         if (this.winRestoreStack === null) {
+            DdsWindow.log(`serializeWinRestoreStack (Stack does not exist.)`);
             return;
         }
-        ClientStorage.serialize(window.location.pathname, this.winRestoreStack);
+        const url = window.location.pathname;
+        ClientStorage.serializeWinStackForFile(url, this.winRestoreStack);
     }
 
     getBooleanFlag(form, name) {
@@ -99,87 +122,67 @@ class DdsWindow {
         return el.value.toLowerCase() === 'true';
     }
 
-    savePrevPageBackground(html) {
-        ClientStorage.savePrevPageBackground(html);
+    restoreWindowPrevPage() {
+        if (!this.activeWindowRecord) {
+            return;
+        }
+
+        const url = window.location.pathname;
+        const winName = this.activeWindowRecord.getAttribute(AsnaDataAttrName.RECORD);
+
+        if (!winName || this.winRestoreStack == null ) {
+            return;
+        }
+
+        let imgData = null;
+        let winStackDirty = false;
+
+        if (this.winRestoreStack.isEmpty()) {
+            imgData = ClientStorage.copyPrevPageBackgroundTo(url, NEXT_BACKGROUND_IMAGE_NAME);
+            if (imgData) {
+                ClientStorage.savePageBackground(url, winName, imgData);
+                this.pushRestoreWindow(winName);
+                winStackDirty = true;
+            }
+        }
+        else {
+            imgData = ClientStorage.getNamedPageBackground(url, NEXT_BACKGROUND_IMAGE_NAME);
+            if (imgData) {
+                ClientStorage.savePageBackground(url, winName, imgData);
+                if (!this.winRestoreStack.find(winName)) {
+                    this.pushRestoreWindow(winName);
+                    winStackDirty = true;
+                }
+            }
+            else {
+                imgData = ClientStorage.getNamedPageBackground(url, winName);
+            }
+        }
+
+        if (winStackDirty) {
+            this.serializeWinRestoreStack();
+        }
+
+        if (imgData) {
+            document.documentElement.style.setProperty('--main-window-background', `url(${imgData})`);
+        }
     }
 
-    restoreWindowPrevPage(form, mainPanel) {
+    initPopup(form) {
         if (!this.activeWindowRecord) {
             return {};
         }
 
-        const winName = this.activeWindowRecord.getAttribute(AsnaDataAttrName.RECORD);
-
-        if (!winName) {
-            return {};
+        const mainEl = form.querySelector('main[role=main]');
+        const winPopup = this.createWinPopup(mainEl);
+        if (winPopup) {
+            mainEl.appendChild(winPopup);
         }
-
-        let topStackWindowEntry = null;
-        let htmlBackground = ClientStorage.getPrevPageBackground();
-        
-        if (this.winRestoreStack !== null && ! this.winRestoreStack.isEmpty()) {     
-            const i = this.winRestoreStack.find(winName);
-            if (i >= 0) {
-                this.winRestoreStack.popGE(this.winRestoreStack.elements[i].entry.index);
-                ClientStorage.serialize(window.location.pathname, this.winRestoreStack); // Convenient for debugging ... 
-            }
-
-            const topStackWindow = this.winRestoreStack.top();
-            if (topStackWindow) {
-                topStackWindowEntry = topStackWindow.entry;
-                if (topStackWindowEntry.htmlBackground) {
-                    htmlBackground = topStackWindowEntry.htmlBackground; 
-                }
-            }
-        }
-
-        const highestZIndex = this.calcHighestZIndex();
-
-        let backDiv = null;
-        if (htmlBackground) {
-            backDiv = document.createElement('div');
-            backDiv.style.position = 'absolute';
-            backDiv.className = WINDOW_CSS_CLASS.PAGE_BACKGROUND;
-
-            const manipulate = new BackDOM_Manipulator();
-            backDiv.innerHTML = manipulate.makeReadOnly(htmlBackground);
-
-            let positionedPanel = mainPanel; // Only positioned items may have z-index.
-            if (positionedPanel.classList && !positionedPanel.classList.contains('dds-two-panel-item')) {
-                // DdsFunctionKeys (nav) must have Location == 'hidden'
-                positionedPanel = form.querySelector('main[role=main]'); 
-                if (positionedPanel) {
-                    const panelContainer = positionedPanel.parentElement;
-                    if (panelContainer && panelContainer.style )
-                        panelContainer.style.display = 'flex'; // Flex with one child behaves like unset (but it is consodered positioned)
-                }
-            }
-            if (positionedPanel && positionedPanel.style)
-                positionedPanel.style.zIndex = highestZIndex + 4;
-
-            backDiv.style.zIndex = highestZIndex + 1;
-            document.body.appendChild(backDiv);
-
-            DdsWindow.log('restoreWindowPrevPage - htmlBackground');
-        }
-
-        const winBackdrop = this.createWindowBackdrop(highestZIndex + 3);
-        const winSpec = this.parseWinSpec();
-        const winOffset = winSpec ? (winSpec.left /*- 1*/) * this.calcColWidth() : 0;
-
-        if (topStackWindowEntry && topStackWindowEntry.win) {
-            DdsWindow.log(`restoreWindowPrevPage - win[${topStackWindowEntry.win.length}]`);
-
-            for (let i = 0, l = topStackWindowEntry.win.length; i < l; i++) {
-                const winBackdropEntry = topStackWindowEntry.win[i];
-                this.createInactivePopup(form, winBackdropEntry.htmlBackdrop, winBackdropEntry.htmlWin, highestZIndex + 3);
-            }
-        }
-
-        return { background: backDiv, backdrop: winBackdrop, winOffset: winOffset };
+            
+        return winPopup;
     }
 
-    positionBackgroundAndBackdrop(form, newElements, scroll ) {
+    positionPopup(form, newElements, scroll ) {
         const mainEl = DdsWindow.queryFormMainElement(form);
 
         if (!mainEl || !mainEl.parentElement) {
@@ -188,65 +191,62 @@ class DdsWindow {
 
         const mainContainer = mainEl.parentElement;
         const mainRect = mainContainer.getBoundingClientRect();
+        const popup = newElements.popup;
 
-        if (newElements.background) {
-            const style = newElements.background.style;
-
-            style.left = `${mainRect.left}px`;
-            style.top = `${mainRect.top}px`;
-            style.width = `${mainRect.width}px`;
-            style.height = `${mainRect.height}px`;
-        }
-
-        const backdropEl = newElements.backdrop;
-        if (backdropEl) {
+        if (popup) {
             let newLeft = mainRect.left + newElements.winOffset;
             if (scroll && scroll.left) {
                 newLeft -= scroll.left;
             }
-            backdropEl.style.left = `${newLeft}px`;
-            if (backdropEl.style.top) {
-                const top = parseFloat(backdropEl.style.top);
-                backdropEl.style.top = `${mainRect.top + top}px`;
+            popup.style.left = `${newLeft}px`;
+            if (popup.style.top) {
+                const top = parseFloat(popup.style.top);
+                popup.style.top = `${mainRect.top + top}px`;
             }
-            document.body.appendChild(backdropEl);
+            mainEl.appendChild(popup);
         }
     }
 
-    createWindowBackdrop(zIndex) {
+    createWinPopup(mainEl) {
         if (!this.activeWindowRecord) {
             return null;
         }
 
-        const backDrop = document.createElement('div');
+        const winPopup = document.createElement('div');
         const winSpec = this.parseWinSpec();
 
-        backDrop.className = WINDOW_CSS_CLASS.BACKDROP;
-        backDrop.style.zIndex = zIndex;
+        winPopup.className = WINDOW_CSS_CLASS.WINPOPUP;
+        const rowHeight = DdsGrid.calcRowHeight(mainEl);
+        const colWidth = DdsGrid.calcColWidth(mainEl);
 
-        if (this.topLeftCorner && this.bottomRightCorner) {
-            const leftTopRect = this.topLeftCorner.getBoundingClientRect();
-            const bottomRightRect = this.bottomRightCorner.getBoundingClientRect();
+        const padding = this.calcRowPadding();
+        const headerHeight = this.calcWindowHeaderHeight();
+        const border = this.calcPopupBorderWidth();
 
-            const padding = this.calcRowPadding();
-            const headerHeight = this.calcWindowHeaderHeight();
-            const border = this.calcPopupBorderWidth();
-            const cellH = bottomRightRect.height - 1;
+        const left = winSpec.left * colWidth;
+        const top = (winSpec.top * rowHeight ) - (headerHeight + padding.top + padding.bottom);
+        const width = (winSpec.width * colWidth) + (2 * border);
+        const height = headerHeight + (winSpec.height * rowHeight) + (padding.top + padding.bottom);
 
-            const top = leftTopRect.y - (headerHeight + padding.top + padding.bottom);
-            const width = ((bottomRightRect.x + (bottomRightRect.width - 1) - leftTopRect.x) - 2 * border)-1;
-            const height = (((bottomRightRect.y + cellH - leftTopRect.y) - 2 * border) - 1) - cellH;
-            backDrop.style.top = `${top}px`;
-            backDrop.style.width = `${width}px`;
-            backDrop.style.height = `${height}px`;
-        }
+        winPopup.style.left = `${left}px`;
+        winPopup.style.top = `${top}px`;
+        winPopup.style.width = `${width}px`;
+        winPopup.style.height = `${height}px`;
 
-        const header = document.createElement('div');
-        header.innerText = winSpec.title;
-        header.className = 'dds-window-header';
-        backDrop.appendChild(header);
+        this.winPopupHeader = document.createElement('div');
+        this.winPopupHeader.innerText = winSpec.title;
+        this.winPopupHeader.className = 'dds-window-header';
+        winPopup.appendChild(this.winPopupHeader);
+        const recordCointaner = document.createElement('div');
+        recordCointaner.className = 'dds-window-popup-record-container';
+        winPopup.appendChild(recordCointaner);
 
-        return backDrop;
+        this.winPopupHeader.setAttribute('draggable', 'true');
+        this.winPopupHeader.addEventListener('dragstart', this.handleDragStartEvent, false);
+        document.addEventListener('dragover', this.handleDragOverEvent, false);
+        this.winPopupHeader.addEventListener('dragend', this.handleDragEndEvent, false);
+
+        return winPopup;
     }
 
     parseWinSpec() {
@@ -263,64 +263,33 @@ class DdsWindow {
         return null;
     }
 
-    createInactivePopup(form, htmlBackdrop, htmlWin, zIndex) {
-        if (htmlBackdrop) {
-            const wrapper = document.createElement('div');
-            wrapper.innerHTML = htmlBackdrop; // Not supposed to have input elements ...
-            document.body.appendChild(wrapper);
-            const backDrop = wrapper.firstChild;
-            backDrop.className = WINDOW_CSS_CLASS.INACTIVE_BACKDROP;
-        }
-
-        if (htmlWin) {
-            const mainEl = DdsWindow.queryFormMainElement(form);
-
-            if (!mainEl || !mainEl.parentElement) {
-                return;
-            }
-
-            const inactivePopup = document.createElement('div');
-            inactivePopup.style.position = 'absolute';
-            inactivePopup.className = WINDOW_CSS_CLASS.PAGE_INACTIVE_BACKGROUND;
-
-            const manipulate = new BackDOM_Manipulator();
-            const mainContainer = mainEl.parentElement;
-            const mainRect = mainContainer.getBoundingClientRect();
-
-            const style = inactivePopup.style;
-            style.zIndex = zIndex;
-            style.left = mainRect.left + 'px';
-            style.top = mainRect.top + 'px';
-            style.width = mainRect.width + 'px';
-            style.height = mainRect.height + 'px';
-
-            inactivePopup.innerHTML = manipulate.makeReadOnly(htmlWin);
-            document.body.appendChild(inactivePopup);
-            inactivePopup.removeAttribute(AsnaDataAttrName.WINDOW);
-        }
-    }
-
-    prepareForSubmit(form) {
-        const pageExtractor = new DOM_Extractor();
-
+    prepareForSubmit(form, htmlToImageCompleteEvent, htmlToImageFilterEvent) {
         if (typeof MonarchPageSavingForPopup === 'function') { // Notify user-code
             MonarchPageSavingForPopup();
         }
 
-        const mainContentHtml = pageExtractor.getMainInnerHTML(form);
+        const main = form.querySelector('main[role=main]');
+        if (main) {
+            HtmlElementCapture.captureAsImage(main, htmlToImageCompleteEvent, htmlToImageFilterEvent, this.htmlToImageStyle);
+            return true;
+        }
+
+        return false;
+    }
+
+    completePrepareSubmit(mostRecentBackgroundImageData) {
+        DdsWindow.log(`completePrepareSubmit - Got a new Image!`);
+
         if (this.activeWindowRecord) {
-            const htmlBackground = ClientStorage.getPrevPageBackground();
-            const winName = this.activeWindowRecord.getAttribute(AsnaDataAttrName.RECORD);
-            this.pushRestoreWindow(winName, htmlBackground, mainContentHtml);
-            this.serializeWinRestoreStack();
+            ClientStorage.savePageBackground(window.location.pathname, NEXT_BACKGROUND_IMAGE_NAME, mostRecentBackgroundImageData);
         }
         else {
-            this.savePrevPageBackground(mainContentHtml);
+            ClientStorage.savePrevPageBackground(mostRecentBackgroundImageData);
         }
 
         if (typeof MonarchPageForPopupSaved === 'function') { // Notify user-code
             MonarchPageForPopupSaved();
-        } 
+        }
     }
 
     calc(cssGlobal) {
@@ -344,7 +313,6 @@ class DdsWindow {
         return { top: this.calc('--dds-grid-row-padding-top'), bottom: this.calc('--dds-grid-row-padding-bottom')};
     }
 
-
     calcWindowHeaderHeight() {
         return this.calc('--popup-header-height');
     }
@@ -367,23 +335,6 @@ class DdsWindow {
         return null;
     }
 
-    calcHighestZIndex() {
-        let highestZIndex = 0;
-
-        highestZIndex = Math.max(
-            highestZIndex,
-            ...Array.from(document.querySelectorAll("body *:not([data-highest]):not(.yetHigher)"), (elem) => parseFloat(getComputedStyle(elem).zIndex))
-                .filter((zIndex) => !isNaN(zIndex))
-        );
-
-        return highestZIndex;
-    }
-
-    setCorners(topLeft, bottomRight) {
-        this.topLeftCorner = topLeft;
-        this.bottomRightCorner = bottomRight;
-    }
-
     static queryFormMainElement(form) {
         return form.querySelector('main[role=main]');
     }
@@ -395,38 +346,29 @@ class DdsWindow {
 
         console.log(`DdsWindow::${msg}`);
     }
-}
 
-class DOM_Extractor {
-    getMainInnerHTML(form) {
-        const mainEl = DdsWindow.queryFormMainElement(form);
-        if (!mainEl) {
-            return {};
-        }
-        const frag = document.createRange().createContextualFragment(mainEl.innerHTML);
-        const div = document.createElement('div');
-        div.appendChild(frag);
-        return div.innerHTML;
+    handleDragStartEvent(event) {
+        this.dragging = { mouseStartX: event.screenX, mouseStartY: event.screenY };
     }
-}
 
-class BackDOM_Manipulator {
-    makeReadOnly(html) {
-        const frag = document.createRange().createContextualFragment(html);
+    handleDragOverEvent(event) {
+        event.dataTransfer.dropEffect = 'move';
+        DomEvents.cancelEvent(event);
+    }
 
-        const named = frag.querySelectorAll('*[name]');
-        for (let i = 0, l = named.length; i < l; i++) {
-            const input = named[i];
-            if (input.name) {
-                input.removeAttribute('name');
-            }
-            input.setAttribute( 'tabIndex', '0');
-        }
+    handleDragEndEvent(event) {
+        let offsetX = this.dragging.mouseStartX - event.screenX;
+        let offsetY = this.dragging.mouseStartY - event.screenY;
 
-        const div = document.createElement('div');
-        div.appendChild(frag);
-        return div.innerHTML;
+        const winPopup = this.winPopupHeader.parentElement;
+        const currentLeft = parseFloat(winPopup.style.left);
+        const currentTop  = parseFloat(winPopup.style.top);
 
+        winPopup.style.left = `${currentLeft - offsetX}px`;
+        winPopup.style.top  = `${currentTop - offsetY}px`;
+
+        DomEvents.cancelEvent(event);
+        delete this.dragging;
     }
 }
 
@@ -436,123 +378,67 @@ const STORAGE_NS = {
 };
 
 class RestoreStack {
-    constructor(elements) {
-        this.elements = elements;
+    constructor(list) {
+        this.elements = list ? list.split(',') : null;
+    }
+
+    getAsList() {
+        if (this.elements == null || this.elements.length == 0)
+            return '';
+        let result = '';
+        for (let i = 0, l = this.elements.length; i < l; i++) {
+            if (result)
+                result += ',';
+            result += this.elements[i];
+        }
+
+        return result;
     }
 
     isEmpty() {
-        return this.elements.length === 0;
+        return this.elements == null || this.elements.length === 0;
     }
 
-    pushWindow(winName, htmlBackground, arrayWinBackdrop ) {
-        const i = this.find(winName);
-        if (i>=0) {
-            this.remove(i); 
-        }
+    pushWindow(winName) {
+        if (!this.elements)
+            this.elements = [];
 
-        this.elements.push(
-            RestoreStack.makeArrayElement(
-                winName,
-                RestoreStack.makeEntry(this.elements.length, htmlBackground, arrayWinBackdrop)
-            )
-        );
-    }
-
-    popGE(index) {
-        let newElements = [];
-        for (let i = 0, l = this.elements.length; i < l; i++) {
-            const arrayElement = this.elements[i];
-            if (arrayElement.entry.index >= index) {
-                break;
-            }
-            newElements.push(arrayElement);
-        }
-
-        this.elements = newElements; 
-    }
-
-    top() {
-        return this.elements.length > 0 ? this.elements[this.elements.length - 1] : null;
+        this.elements.push(winName);
     }
 
     find(winName) {
+        if (this.isEmpty()) {
+            return false;
+        }
+
         for (let i = 0, l = this.elements.length; i < l; i++) {
-            const arrayElement = this.elements[i];
-            if (arrayElement.winName === winName) {
-                return i;
+            if (this.elements[i] == winName) {
+                return true;
             }
         }
-
-        return -1;
-    }
-
-    remove(index) {
-        let newElements = [];
-        for (let i = 0, l = this.elements.length; i < index && i < l; i++) {
-            newElements.push(this.elements[i]);
-        }
-        for (let i = index + 1, l = this.elements.length; i < l; i++) {
-            newElements.push(this.elements[i]);
-        }
-
-        this.elements = newElements; 
-    }
-
-    static makeEntry(index, htmlBackground, arrayWinBackdrop ) {
-        let entry = {
-            htmlBackground: htmlBackground,
-            win: arrayWinBackdrop,
-            index: index
-        };
-
-        return entry;
-    }
-
-    static makeArrayElement(winName, entry) {
-        return {
-            winName: winName,
-            entry: entry
-        };
-    }
-
-    static makeWinBackdropEntry(htmlWin, htmlBackdrop) {
-        return {
-            htmlWin: htmlWin,
-            htmlBackdrop: htmlBackdrop
-        };
+        return false;
     }
 }
 
 class ClientStorage {
-    static loadStackForFile(filePath) {
-        let stack = [];
+    static loadWinStackForFile(filePath) {
+        const stackList = ClientStorage.getDisplayfileStack(filePath);
 
-        const keys = ClientStorage.getSessionKeysForFile(filePath);
-        for (let i = 0, l = keys.length; i < l; i++) {
-            const key = keys[i];
-            const val = sessionStorage.getItem(key);
-            if (val) {
-                const winName = ClientStorage.winNameFromKey(key);
-                stack.push(RestoreStack.makeArrayElement( winName, ClientStorage.parseStackItem(val)) );
-                ClientStorage.log(`loadStackForFile key:${key}.`);
-            }
+        if (stackList) {
+            ClientStorage.log(`loadStackForFile loaded: ${stackList}`);
+            return new RestoreStack(stackList); // sorted);
         }
 
-        if (stack.length) {
-            const sorted = stack.sort((a, b) => a.entry.index - b.entry.index);
-            return new RestoreStack(sorted); 
-        }
-
-        return  null;
+        ClientStorage.log(`Empty stack for: ${filePath}`);
+        return new RestoreStack('');
     }
 
-    static serialize(filePath, stack) {
-        ClientStorage.removeEntriesForFile(filePath);
-        for (let i = 0, l = stack.elements.length; i < l; i++) {
-            const key = ClientStorage.makeDisplayfileKey(filePath, stack.elements[i].winName);
-            sessionStorage.setItem(key, JSON.stringify(stack.elements[i].entry));
-            ClientStorage.log(`serialize key:${key}.`);
+    static serializeWinStackForFile(filePath, restoreStack) {
+        ClientStorage.log(`serializeStackForFile key:${filePath}.`);
+        if (!restoreStack) {
+            return;
         }
+        ClientStorage.setDisplayfileStack(filePath, restoreStack.getAsList());
     }
 
     static removeEntriesForFile(filePath) {
@@ -563,6 +449,26 @@ class ClientStorage {
             sessionStorage.removeItem(key);
             ClientStorage.log(`removeEntriesForFile key:${key} removed.`);
         }
+    }
+
+    static purgeWinStack() {
+        const keys = ClientStorage.getSessionWinStack();
+        if (keys) {
+            for (let i = 0, l = keys.length; i < l; i++) {
+                sessionStorage.removeItem(keys[i]);
+            }
+        }
+    }
+
+    static getSessionWinStack() {
+        let keys = [];
+        for (let i = 0, l = sessionStorage.length; i < l; i++) {
+            const key = sessionStorage.key(i);
+            if (key.startsWith(STORAGE_NS.DISPLAYFILE)) {
+                keys.push(key);
+            }
+        }
+        return keys;
     }
 
     static getSessionKeysForFile(filePath) {
@@ -578,34 +484,78 @@ class ClientStorage {
         return keys;
     }
 
-    static savePrevPageBackground(html) {
+    static savePrevPageBackground(imageData) {
         const key = ClientStorage.makePrevPageBackgroundKey();
-        sessionStorage.setItem(key, html);
+        sessionStorage.setItem(key, imageData);
         ClientStorage.log(`savePrevPageBackground key:${key}.`);
+    }
+
+    static purgePrevPageBackground() {
+        const key = ClientStorage.makePrevPageBackgroundKey();
+        sessionStorage.removeItem(key);
+    }
+
+    static copyPrevPageBackgroundTo(url, winName) {
+        const prevPageBackground = this.getPrevPageBackground();
+        if (prevPageBackground) {
+            this.savePageBackground(url, winName, prevPageBackground);
+            return prevPageBackground;
+        }
+        return null;
+    }
+
+    static removeNamedPageBackground(url, imageName) {
+        const key = ClientStorage.makeDisplayfileKey(url, imageName);
+        sessionStorage.removeItem(key);
+    }
+
+    static moveNamedPageBackgroundTo(url, srcImageName, destImageName) {
+        const sourcekey = ClientStorage.makeDisplayfileKey(url, srcImageName);
+        const destKey = ClientStorage.makeDisplayfileKey(url, destImageName);
+        const sourceImage = sessionStorage.getItem(sourcekey);
+        if (sourceImage) {
+            sessionStorage.setItem(destKey, sourceImage);
+        }
+        sessionStorage.removeItem(sourcekey);
+        return sourceImage;
+    }
+
+    static savePageBackground(url, winName, imageData) {
+        const key = ClientStorage.makeDisplayfileKey(url, winName);
+        sessionStorage.setItem(key, imageData);
+        ClientStorage.log(`savePageBackground key:${key} Win:${winName}.`);
     }
 
     static getPrevPageBackground() {
         const key = ClientStorage.makePrevPageBackgroundKey();
-        const item = sessionStorage.getItem(key);
-        return item ? item : '';
+        return sessionStorage.getItem(key);
     }
 
-    static parseStackItem(jsonStr) {
-        let entry = {};
-        /*eslint-disable*/
-        try {
-            entry = JSON.parse(jsonStr);
-        }
-        catch (e) {
-            return {};
-        }
-        /*eslint-enable*/
-        return entry;
+    static getNamedPageBackground(url, winName) {
+        const key = ClientStorage.makeDisplayfileKey(url, winName);
+        return sessionStorage.getItem(key);
     }
+
 
     static makeDisplayfileKey(filePath, winName) {
-        let root = `${STORAGE_NS.DISPLAYFILE}${filePath}`;
+        const root = `${STORAGE_NS.DISPLAYFILE}${filePath}`;
         return winName ? `${root}/${winName}` : root;
+    }
+
+    static getDisplayfileStack(filePath) {
+        const stackKey = ClientStorage.makeDisplayfileStackKey(filePath);
+        return sessionStorage.getItem(stackKey);
+    }
+
+    static makeDisplayfileStackKey(filePath) {
+        const root = `${STORAGE_NS.DISPLAYFILE}${filePath}`;
+        return `${root}.stack`;
+    }
+
+    static setDisplayfileStack(filePath, value) {
+        const stackKey = ClientStorage.makeDisplayfileStackKey(filePath);
+        sessionStorage.setItem(stackKey, value);
+        ClientStorage.log(`setDisplayfileStack key:${stackKey} value:${value}`);
     }
 
     static makePrevPageBackgroundKey() {
@@ -634,6 +584,34 @@ class ClientStorage {
             return null;
         }
         return validKey.substring(lastIndex + 1);
+    }
+
+    static getBackgroundImage(url, winName) {
+        const key = ClientStorage.makeDisplayfileKey(url, winName);
+        return sessionStorage.getItem(key);
+    }
+
+    static popWinBackgroundPagesGT(url, winName, winRestoreStack) {
+        const stack = winRestoreStack.elements;
+        let newStack = [];
+        let toRemove = [];
+        for (let i = 0, l = stack.length, indexWinName = -1; i < l; i++) {
+            if (stack[i] == winName) {
+                indexWinName = i;
+            }
+            if (indexWinName < 0 || i <= indexWinName)
+                newStack.push(stack[i]);
+            else if (i> indexWinName)
+                toRemove.push(stack[i]);
+        }
+
+        for (let i = 0, l = toRemove.length; i < l; i++) {
+            const key = ClientStorage.makeDisplayfileKey(url, toRemove[i]);
+            sessionStorage.removeItem(key);
+        }
+
+        winRestoreStack.elements = newStack;
+        return winRestoreStack;
     }
 
     static log(msg) {

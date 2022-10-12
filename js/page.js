@@ -42,6 +42,8 @@ class Page {
         this.handleMainPanelScrollEvent = this.handleMainPanelScrollEvent.bind(this);
         this.handleAjaxGetRecordsResponseEvent = this.handleAjaxGetRecordsResponseEvent.bind(this);
         this.handleAjaxGetIconsResponseEvent = this.handleAjaxGetIconsResponseEvent.bind(this);
+        this.handleHtmlToImageFilterEvent = this.handleHtmlToImageFilterEvent.bind(this);
+        this.handleHtmlToImageCompleteEvent = this.handleHtmlToImageCompleteEvent.bind(this);
 
         this.pushKey = this.pushKey.bind(this); // Accesible thru window.asnaExpo
     }
@@ -71,7 +73,6 @@ class Page {
 
         DdsWindow.init(thisForm);
 
-        DdsGrid.addWinPopupCorners(DdsWindow.activeWindowRecord);
         DdsGrid.completeGridRows(thisForm, DdsWindow.activeWindowRecord);
         this.stretchConstantsText();
         this.addOnClickPushKeyEventListener();
@@ -94,22 +95,25 @@ class Page {
 
         this.mainPanel = this.getMainPanel(thisForm);
 
-        this.winNewElements = {};
+        this.winPopup = null;
         if (DdsWindow.activeWindowRecord!==null) {
-            this.winNewElements = DdsWindow.restoreWindowPrevPage(thisForm, this.mainPanel);
+            DdsWindow.restoreWindowPrevPage();
+            DdsGrid.setPageHeight(thisForm);
+            this.winPopup = DdsWindow.initPopup(thisForm);
         }
 
-        DdsGrid.truncateColumns(thisForm); // Do it after restorePopupPrevPage
-        if (this.winNewElements.background && this.winNewElements.backdrop) {
-            DdsWindow.positionBackgroundAndBackdrop(thisForm, this.winNewElements);
-            // DdsWindow.serializeWinRestoreStack();
+        if (this.winPopup) {
+            DdsGrid.moveRecordsToPopup(thisForm, this.winPopup);
+        }
+        else {
+            DdsGrid.truncateColumns(thisForm);
         }
 
         window.addEventListener('resize', this.handleWindowResizeEvent, false);
 
-        if (this.mainPanel) {
-            this.mainPanel.addEventListener('scroll', this.handleMainPanelScrollEvent, false);
-        }
+        //if (this.mainPanel) {
+        //    this.mainPanel.addEventListener('scroll', this.handleMainPanelScrollEvent, false);
+        //}
 
         Page.setupAutoPostback(thisForm, this.aidKeyBitmap);
         Page.setupLeftPad(thisForm);
@@ -254,7 +258,7 @@ class Page {
         if (!this.winNewElements || !(this.winNewElements.background && this.winNewElements.backdrop)) {
             return;
         }
-        DdsWindow.positionBackgroundAndBackdrop(this.getForm(), this.winNewElements);
+        // DdsWindow.positionPopup(this.getForm(), this.winNewElements);
     }
 
     handleMainPanelScrollEvent(event) {
@@ -362,8 +366,8 @@ class Page {
         const withGridCol = SubfileController.selectAllWithGridColumns(sflEl);
         const sflColRange = SubfileController.calcSflMinMaxColRange(withGridCol);
 
-        if (SubfileController.addMouseCueEvents(sflEl, sflCtrlStore.inputBehaviour)) {
-            SubfileController.constrainRecordCueing(sflEl, withGridCol, sflColRange);
+        if (SubfileController.addMouseCueEvents(sflEl, sflCtrlStore.inputBehaviour) && !DdsWindow.pageHasWindows) {
+            SubfileController.constrainRecordCueing(sflEl, sflColRange);
         }
 
         SubfileController.removeRowGap(sflEl);
@@ -378,7 +382,7 @@ class Page {
             );
 
             let sflEndIcons = [];
-            if (icon && icon.el && icon.iconParms) {
+            if (icon && icon.el && icon.iconParms && icon.iconParms.title) {
                 sflEndIcons.push(icon);
             }
             if (sflEndIcons.length>0)
@@ -404,6 +408,10 @@ class Page {
 
         */
 
+        //if (DdsWindow.activeWindowRecord !== null) {
+        //    DdsGrid.sendMainGridChildrenToFront(form);
+        //}
+
         if (typeof (MonarchSubfilePageChanged) === 'function') {   // Notify user-code
             MonarchSubfilePageChanged(res.request.recordName, sflEl, res.request.from, res.request.request.to - 1, res.request.mode);
         }
@@ -412,7 +420,7 @@ class Page {
     handleWindowScrollChanged(element) {
         if (/*this.winNewElements.background &&*/ this.winNewElements.backdrop) {
             const scroll = { left: element.scrollLeft, top: element.scrollTop };
-            DdsWindow.positionBackgroundAndBackdrop(this.getForm(), this.winNewElements, scroll );
+            DdsWindow.positionPopup(this.getForm(), this.winNewElements, scroll );
         }
     }
 
@@ -460,7 +468,7 @@ class Page {
 
         WaitForResponseAnimation.prepareWaitAnimation(true);
         WaitForResponseAnimation.showAnimationIfLongWait({ checkTransaction: true, normalWaitTimeout: 2000 });
-        DdsWindow.prepareForSubmit(form);
+        const delaySumbit = DdsWindow.prepareForSubmit(form, this.handleHtmlToImageCompleteEvent, this.handleHtmlToImageFilterEvent );
 
         let sflCtrlRecNames = SubfilePagingStore.getSflCtlStoreNames();
         for (let i = 0; i < sflCtrlRecNames.length; i++ )
@@ -470,6 +478,26 @@ class Page {
         RadioButtonGroup.prepareForSubmit(form);
         Signature.prepareForSubmit(form);
         DecDate.prepareForSubmit(form);
+        if (!delaySumbit) {
+            form.submit();
+        }
+    }
+
+    handleHtmlToImageFilterEvent(node) {
+        if ( typeof MonarchWindowBackgroundHtmlToImageFilter === 'function' ) {
+            return MonarchWindowBackgroundHtmlToImageFilter(node);
+        }
+
+        return true;
+    }
+
+    handleHtmlToImageCompleteEvent(winBackgroundImageData) {
+        let form = this.getForm();
+
+        if (winBackgroundImageData) {
+            DdsWindow.completePrepareSubmit(winBackgroundImageData);
+        }
+
         form.submit();
     }
 
@@ -605,6 +633,8 @@ class Page {
             this.iconCache.update(res.shape);
         }
 
+        // const highestZIndex = DdsWindow.calcHighestZIndex();
+
         for (let i = 0, l = res.request.iconForElement.length; i < l; i++ ) {
             const icon = res.request.iconForElement[i];
             for (let j = 0, lj = icon.elementID.length; j < lj; j++) {
@@ -614,6 +644,9 @@ class Page {
                     Icons.appendSvgContent(el, shape, el.getAttribute(AsnaDataAttrName.ICON_INTERNAL_COLOR), el.getAttribute(AsnaDataAttrName.ICON_INTERNAL_TITLE));
                     el.removeAttribute(AsnaDataAttrName.ICON_INTERNAL_COLOR);
                     el.removeAttribute(AsnaDataAttrName.ICON_INTERNAL_TITLE);
+                    //if (DdsWindow.pageHasWindows) {
+                    //    el.style.zIndex = highestZIndex +3;
+                    //}
                 }
             }
         }
@@ -624,6 +657,7 @@ class Page {
 
         if (main.classList) {
             main.classList.remove('display-element-uninitialized');
+            main.classList.add('display-element-initialized');
         }
     }
 }

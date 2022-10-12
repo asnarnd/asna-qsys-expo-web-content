@@ -7,7 +7,6 @@
 
 export { theDdsGrid as DdsGrid };
 
-import { DdsWindow } from '../js/dds-window.js';
 import { AsnaDataAttrName } from '../js/asna-data-attr.js';
 
 const DDS_FILE_LINES = 27;
@@ -15,48 +14,9 @@ const MAIN_SELECTOR = 'main[role=main]';
 const CLASS_GRID_ROW = 'dds-grid-row';
 const CLASS_GRID_EMPTY_ROW = 'dds-grid-empty-row';
 const CLASS_PRESERVE_BLANKS = 'dds-preserve-blanks';
+const CLASS_WINDOW_POPUP_RECORD_CONTAINER = 'dds-window-popup-record-container';
 
 class DdsGrid {
-    addWinPopupCorners(activeWindowRecord) {
-        const winSpecs = DdsWindow.parseWinSpec();
-        if (!winSpecs) {
-            return;
-        }
-
-        const ltCorner = this.findElAtRowCol(activeWindowRecord, 1, winSpecs.left + 1);
-        const brCorner = this.findElAtRowCol(activeWindowRecord, winSpecs.height, winSpecs.left + winSpecs.width);
-
-        if (ltCorner && ltCorner.el && brCorner && brCorner.el) {
-            DdsWindow.setCorners(ltCorner.el, brCorner.el);
-            return; // No need to create corners.
-        }
-
-        let leftTopCorner = ltCorner ? ltCorner.el : null;
-        let bottomRightCorner = brCorner ? brCorner.el : null;
-
-        if (!leftTopCorner) {
-            let divRow = ltCorner ? ltCorner.divRow : null;
-            leftTopCorner = this.createSpanGridStyle('' + (winSpecs.left + 1));
-            if (!divRow) {
-                divRow = this.createDivGridRowStyle('1');
-                activeWindowRecord.insertBefore(divRow, activeWindowRecord.firstChild);
-            }
-            divRow.appendChild(leftTopCorner);
-        }
-
-        if (!bottomRightCorner) {
-            let divRow = brCorner ? brCorner.divRow: null;
-            bottomRightCorner = this.createSpanGridStyle('' + (winSpecs.left + winSpecs.width));
-            if (!divRow) {
-                divRow = this.createDivGridRowStyle(winSpecs.height);
-                activeWindowRecord.appendChild(divRow);
-            }
-            divRow.appendChild(bottomRightCorner);
-        }
-
-        DdsWindow.setCorners(leftTopCorner, bottomRightCorner);
-    }
-
     completeGridRows(form, activeWindowRecord) {
         const records = this.findAllRecords(form);
 
@@ -89,13 +49,6 @@ class DdsGrid {
                 }
                 const range = rangeVal.split('-');
                 let rowVal = parseInt(range[0], 10);
-                let winSpecs = null;
-                if (activeWindowRecord && activeWindowRecord.contains(row)) {
-                    winSpecs = DdsWindow.parseWinSpec();
-                    if (winSpecs && winSpecs.top) {
-                        rowVal += winSpecs.top;
-                    }
-                }
                 let emptyRowsBefore = rowVal - 1 - lastRowVal;
 
                 if (emptyRowsBefore > 0) {
@@ -107,21 +60,30 @@ class DdsGrid {
                 }
                 lastRowVal = range.length === 2 ? range[1] : range[0];
                 lastRowVal = parseInt(lastRowVal, 10);
-                if (winSpecs && winSpecs.top) {
-                    lastRowVal += winSpecs.top;
-                }
                 lastRow = row;
             }
         }
-        if (lastRow) { // Complete rows to set the height of the top-record
-            const parent = lastRow.parentElement;
 
-            for (let i = lastRowVal; i < DDS_FILE_LINES; i++) {
-                parent.appendChild(this.createEmptyDivGridRowStyle(i + 1));
+        if (!activeWindowRecord) { // Complete rows to set the height of the top-record
+            if (lastRow) {
+                const parent = lastRow.parentElement;
+
+                for (let i = lastRowVal; i < DDS_FILE_LINES; i++) {
+                    parent.appendChild(this.createEmptyDivGridRowStyle(i + 1));
+                }
             }
         }
+        // else
+        //    Note: For Page with active WINDOW, this is done later in setPageHeight()
 
         subfiles.forEach((sfl) => this.completeSubfileGridRows(sfl));
+    }
+
+    setPageHeight(form) {
+        const mainEl = form.querySelector('main[role=main]');
+        if (mainEl) {
+            mainEl.style.minHeight = `${DDS_FILE_LINES * this.calcRowHeight(mainEl)}px`;
+        }
     }
 
     completeSubfileGridRows(sflEl) {
@@ -160,6 +122,18 @@ class DdsGrid {
         return main.querySelectorAll(`div[${AsnaDataAttrName.RECORD}]`);
     }
 
+    findDirectDescendantRecords(main) {
+        let result = [];
+        const children = main.children;
+        for (let i = 0, l = children.length; i < l; i++) {
+            const child = children[i];
+            if (child.getAttribute(`${AsnaDataAttrName.RECORD}`)) {
+                result.push(child);
+            }
+        }
+        return result;
+    }
+
     findRows(parentRecord) {
         const all = parentRecord.querySelectorAll(`div[${AsnaDataAttrName.ROW}]`);
         if (!all || !all.length) {
@@ -167,6 +141,24 @@ class DdsGrid {
         }
 
         return all;
+    }
+
+    moveRecordsToPopup(form, winPopup) {
+        const mainEl = form.querySelector(MAIN_SELECTOR);
+        if (!mainEl) { return; }
+
+        const popupRecordContainer = winPopup.querySelector(`.${CLASS_WINDOW_POPUP_RECORD_CONTAINER}`);
+        if (!popupRecordContainer) { return; }
+
+        const records = this.findDirectDescendantRecords(mainEl);
+        if (!records) { return; }
+
+        for (let i = 0, l = records.length; i < l; i++) {
+            const record = records[0];
+            const parent = record.parentElement;
+            parent.removeChild(record);
+            popupRecordContainer.appendChild(record);
+        }
     }
 
     insertEmptyRows(count, beforeEl, offset) {
@@ -211,18 +203,11 @@ class DdsGrid {
 
     truncateColumns(form) {
         let maxCol = this.calcMaxGridColumnEnd(form.querySelector(MAIN_SELECTOR));
-        if (!maxCol) {
+        if (!maxCol || isNaN(maxCol)) {
             return;
         }
 
-        const backWindows = document.querySelectorAll('.dds-window-background');
-        for (let i = 0, l = backWindows.length; i < l; i++) {
-            const maxWinGridCol = this.calcMaxGridColumnEnd(backWindows[i]);
-            maxCol = Math.max(maxCol, maxWinGridCol);
-        }
-
         if (maxCol > 80) {
-            // console.log(`Truncate to: ${maxCol}`);
             document.documentElement.style.setProperty('--dds-grid-columns', maxCol);
         }
     }
@@ -241,15 +226,41 @@ class DdsGrid {
         let maxCol = 0;
 
         for (let i = 0, l = elementsInlineStyle.length; i < l; i++) {
-            let style = elementsInlineStyle[i].style;
-            if (!style || !style.gridColumnEnd) {
+            const el = elementsInlineStyle[i];
+            if (!el.style) {
                 continue;
             }
-            maxCol = Math.max(maxCol, style.gridColumnEnd);
+
+            const gridStartEnd = this.getGridColStartEnd(el);
+            if (gridStartEnd && gridStartEnd.end && !isNaN(gridStartEnd.end)) {
+                maxCol = Math.max(maxCol, gridStartEnd.end);
+            }
         }
 
         return maxCol;
     }
+
+    getGridColStartEnd(el) {
+        const SPAN_ = 'span ';
+        const colStart = el.style.gridColumnStart;
+        let start = NaN, end = NaN;
+
+        if (colStart) {
+            start = parseInt(colStart);
+            const colEnd = el.style.gridColumnEnd;
+            if (colEnd) {
+                if (colEnd.startsWith && colEnd.startsWith(SPAN_)) {
+                    if (!isNaN(start)) {
+                        end = start + parseInt(colEnd.substring(SPAN_.length));
+                    }
+                }
+                else
+                    end = parseInt(colEnd);
+            }
+        }
+        return { start: start, end: end };
+    }
+
 
     findSubfile(sflCtrlName, sflCtl) {
         if (!sflCtl) {
@@ -295,6 +306,31 @@ class DdsGrid {
         }
 
         return result;
+    }
+
+    calcRowHeight(parentEl) {
+        const sampleEl = document.createElement("div");
+        sampleEl.className = CLASS_GRID_EMPTY_ROW;
+        const newChild = parentEl.appendChild(sampleEl);
+        const cssStyle = window.getComputedStyle(sampleEl, null);
+        const paddigTop = parseFloat(cssStyle['padding-top']); // parseFloat to remove 'px'
+        const paddigBottom = parseFloat(cssStyle['padding-bottom']);
+        const minHeight = parseFloat(cssStyle['min-height']);
+        parentEl.removeChild(newChild);
+
+        return paddigTop + minHeight + paddigBottom;
+    }
+
+    calcColWidth(parentEl) {
+        const divRow = this.createDivGridRowStyle('1');
+        const cell = this.createSpanGridStyle(1);
+        divRow.appendChild(cell);
+
+        const newChild = parentEl.appendChild(divRow);
+        const rect = cell.getBoundingClientRect();
+        parentEl.removeChild(newChild);
+
+        return rect.width;
     }
 }
 
