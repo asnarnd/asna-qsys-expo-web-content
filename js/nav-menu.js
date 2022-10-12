@@ -9,6 +9,8 @@ export { theNavMenu as NavigationMenu };
 
 import { AsnaDataAttrName } from '../js/asna-data-attr.js';
 
+const VAR_WIN_BKGND_POSITION = '--main-window-background-position';
+
 class NavigationMenu {
     init() {
         const nav = document.querySelector(`nav[${AsnaDataAttrName.ACTIVEKEY_LOCATION}]`);
@@ -27,29 +29,21 @@ class NavigationMenu {
         }
 
         const container = document.createElement('div');
-        let defaultWinBackgroundPosition = 'left top';
 
         switch (location) {
             case 'vertical-left':
                 container.className = 'dds-two-vertical-panel-container';
-                defaultWinBackgroundPosition = 'right top';
                 break;
             case 'vertical-right':
                 container.className = 'dds-two-vertical-panel-right-container';
-                defaultWinBackgroundPosition = 'center top';
                 break;
             case 'horizontal-top':
                 container.className = 'dds-two-horizontal-panel-container';
-                defaultWinBackgroundPosition = 'center bottom';
                 break;
             case 'horizontal-bottom':
                 container.className = 'dds-two-horizontal-panel-bottom-container';
                 break;
         }
-
-        const cssVarRoot = document.documentElement.style;
-        const VAR_WIN_BKGND_POSITION = '--main-window-background-position';
-        if (cssVarRoot) { cssVarRoot.setProperty(VAR_WIN_BKGND_POSITION, defaultWinBackgroundPosition ); }
 
         container.style.visibility = 'hidden'; // Just to avoid flicker ...
         main.parentNode.removeChild(main);
@@ -77,6 +71,8 @@ class NavigationMenu {
             nav.classList.remove('display-element-uninitialized');
         }
 
+        this.setVarBackgroundPosition();
+
         return container;
     }
 
@@ -86,6 +82,16 @@ class NavigationMenu {
 
         div.appendChild(el);
         return div;
+    }
+
+    setVarBackgroundPosition() {
+        const main = document.querySelector('main[role=main]');
+        const mainRect = main.getBoundingClientRect();
+
+        const cssVarRoot = document.documentElement.style;
+        if (cssVarRoot) {
+            cssVarRoot.setProperty(VAR_WIN_BKGND_POSITION, `${mainRect.left}px ${mainRect.top}px`);
+        }
     }
 }
 
