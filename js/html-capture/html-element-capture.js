@@ -8,7 +8,7 @@
 
 export { HtmlElementCapture };
 
-import './html-to-image.js'; // MIT license to https://github.com/bubkoo/html-to-image
+import { toPng } from './html-to-image.js';
 
 class HtmlElementCapture {
     static captureAsImage(node, htmlToImageCompleteEvent, filterCallback, styleOption) {
@@ -24,13 +24,12 @@ class HtmlElementCapture {
             options.filter = filterCallback;
         }
 
-        htmlToImage.toPng(node, options)
+        toPng(node, options)
             .then(function (dataUrl) {
                 htmlToImageCompleteEvent(dataUrl);
             })
             .catch(function (error) {
-                htmlToImageCompleteEvent('');
-                // console.error('oops, something went wrong!', error);
+                htmlToImageCompleteEvent('', error);
             });
     }
 }
