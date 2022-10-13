@@ -491,7 +491,7 @@ class Page {
         return true;
     }
 
-    handleHtmlToImageCompleteEvent(winBackgroundImageData) {
+    handleHtmlToImageCompleteEvent(winBackgroundImageData,error) {
         let form = this.getForm();
 
         if (winBackgroundImageData) {
