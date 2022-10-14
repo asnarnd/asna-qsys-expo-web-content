@@ -405,12 +405,7 @@ class Page {
         if (sflCursorRow) {
             ASNA.SubfileUI.SetCurrentRecord(el, sflCursorRow);
         }
-
         */
-
-        //if (DdsWindow.activeWindowRecord !== null) {
-        //    DdsGrid.sendMainGridChildrenToFront(form);
-        //}
 
         if (typeof (MonarchSubfilePageChanged) === 'function') {   // Notify user-code
             MonarchSubfilePageChanged(res.request.recordName, sflEl, res.request.from, res.request.request.to - 1, res.request.mode);
@@ -466,9 +461,14 @@ class Page {
             return;
         }
 
+        if (!Validate.reportFormValidity(form)) {
+            return;
+        }
+
+        const delaySumbit = DdsWindow.prepareForSubmit(form, this.handleHtmlToImageCompleteEvent, this.handleHtmlToImageFilterEvent );
+
         WaitForResponseAnimation.prepareWaitAnimation(true);
         WaitForResponseAnimation.showAnimationIfLongWait({ checkTransaction: true, normalWaitTimeout: 2000 });
-        const delaySumbit = DdsWindow.prepareForSubmit(form, this.handleHtmlToImageCompleteEvent, this.handleHtmlToImageFilterEvent );
 
         let sflCtrlRecNames = SubfilePagingStore.getSflCtlStoreNames();
         for (let i = 0; i < sflCtrlRecNames.length; i++ )
@@ -492,12 +492,11 @@ class Page {
     }
 
     handleHtmlToImageCompleteEvent(winBackgroundImageData,error) {
-        let form = this.getForm();
-
         if (winBackgroundImageData) {
             DdsWindow.completePrepareSubmit(winBackgroundImageData);
         }
 
+        const form = this.getForm();
         form.submit();
     }
 
