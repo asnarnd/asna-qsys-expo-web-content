@@ -119,4 +119,16 @@ class Validate {
         const encData = Base64.encode(UnicodeToUTF8.getArray(JSON.stringify(newData)));
         el.setAttribute(AsnaDataAttrName.CHECK_MANDATORY, encData);
     }
+
+    static reportFormValidity(form) {
+        const inputs = form.querySelectorAll('input,select,textarea:not([type="hidden"])');
+        for (let i = 0, l = inputs.length; i < l; i++) {
+            const input = inputs[i];
+
+            if (typeof (input.reportValidity) === 'function' && ! input.reportValidity()) {
+                return false;
+            }
+        }
+        return true;
+    }
 }
