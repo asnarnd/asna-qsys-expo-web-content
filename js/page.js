@@ -33,6 +33,8 @@ import { PageAlert } from './page-alert.js';
 import { Signature } from './signature/signature.js';
 import { BrowserInfo } from './detection.js';
 
+const MAIN_SELECTOR = 'main[role=main]';
+
 class Page {
     constructor() {
         this.handleDocumentKeyDown = this.handleDocumentKeyDown.bind(this);
@@ -40,6 +42,7 @@ class Page {
         this.handleOnFocusEvent = this.handleOnFocusEvent.bind(this);
         this.handleWindowResizeEvent = this.handleWindowResizeEvent.bind(this);
         this.handleMainPanelScrollEvent = this.handleMainPanelScrollEvent.bind(this);
+        this.handleDocScrollEvent = this.handleDocScrollEvent.bind(this);
         this.handleAjaxGetRecordsResponseEvent = this.handleAjaxGetRecordsResponseEvent.bind(this);
         this.handleAjaxGetIconsResponseEvent = this.handleAjaxGetIconsResponseEvent.bind(this);
         this.handleHtmlToImageFilterEvent = this.handleHtmlToImageFilterEvent.bind(this);
@@ -87,13 +90,12 @@ class Page {
 
         WaitForResponseAnimation.init(thisForm);
         const twoPanelContainer = NavigationMenu.init();
+        const main = thisForm.querySelector(MAIN_SELECTOR);
 
-        this.setAsInitialized();
+        this.setAsInitialized(main);
         if (twoPanelContainer) {
             twoPanelContainer.removeAttribute('style'); // Style should only contain display-hidden, remove it. Let the class take effect
         }
-
-        this.mainPanel = this.getMainPanel(thisForm);
 
         this.winPopup = null;
         if (DdsWindow.activeWindowRecord!==null) {
@@ -111,9 +113,13 @@ class Page {
 
         window.addEventListener('resize', this.handleWindowResizeEvent, false);
 
-        //if (this.mainPanel) {
-        //    this.mainPanel.addEventListener('scroll', this.handleMainPanelScrollEvent, false);
-        //}
+        if (main) {
+            const mainPanel = main.parentElement;
+            if (mainPanel) {
+                mainPanel.addEventListener('scroll', this.handleMainPanelScrollEvent, false);
+            }
+        }
+        document.addEventListener('scroll', this.handleDocScrollEvent, false);
 
         Page.setupAutoPostback(thisForm, this.aidKeyBitmap);
         Page.setupLeftPad(thisForm);
@@ -126,7 +132,7 @@ class Page {
         else {
             PositionCursor.toDefaultField(thisForm);
         }
-        const sflEndIcons = SubfileController.init(thisForm.querySelector('main[role=main]'),DdsWindow.activeWindowRecord!==null);
+        const sflEndIcons = SubfileController.init(main,DdsWindow.activeWindowRecord!==null);
         this.initIcons(sflEndIcons);
 
         Page.promptResettableErrorMessage(thisForm);
@@ -254,24 +260,19 @@ class Page {
     }
 
     handleWindowResizeEvent() {
-        // console.log(`resize w:${window.innerWidth} h:${window.innerHeight}`);
-        if (!this.winNewElements || !(this.winNewElements.background && this.winNewElements.backdrop)) {
-            return;
+        const form = this.getForm();
+        const main = form.querySelector(MAIN_SELECTOR);
+        if (main) {
+            DdsWindow.setVarBackgroundPosition();
         }
-        // DdsWindow.positionPopup(this.getForm(), this.winNewElements);
     }
 
     handleMainPanelScrollEvent(event) {
-        // this.lastKnownScrollPos = event.currentTarget.scrollY;
+        DdsWindow.setVarBackgroundPosition();
+    }
 
-        if (!this.scroll_InProgress) {
-            window.requestAnimationFrame(()=> {
-                this.handleWindowScrollChanged(event.target);
-                this.scroll_InProgress = false;
-            });
-
-            this.scroll_InProgress = true;
-        }
+    handleDocScrollEvent(event) {
+        DdsWindow.setVarBackgroundPosition();
     }
 
     handleAjaxGetRecordsResponseEvent(jsonStr) {
@@ -412,24 +413,8 @@ class Page {
         }
     }
 
-    handleWindowScrollChanged(element) {
-        if (/*this.winNewElements.background &&*/ this.winNewElements.backdrop) {
-            const scroll = { left: element.scrollLeft, top: element.scrollTop };
-            DdsWindow.positionPopup(this.getForm(), this.winNewElements, scroll );
-        }
-    }
-
     getForm() {
         return this.formId ? document.forms[this.formId] : document.forms[0];
-    }
-
-    getMainPanel(form) {
-        const mainEl = form.querySelector('main[role=main]');
-
-        if (!mainEl || !mainEl.parentElement) {
-            return null;
-        }
-        return mainEl.parentElement;
     }
 
     getFirstElementByName(name) {
@@ -651,9 +636,7 @@ class Page {
         }
     }
 
-    setAsInitialized() {
-        const main = document.querySelector(`main[role=main]`);
-
+    setAsInitialized(main) {
         if (main.classList) {
             main.classList.remove('display-element-uninitialized');
             main.classList.add('display-element-initialized');
