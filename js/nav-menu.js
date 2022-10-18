@@ -8,8 +8,7 @@
 export { theNavMenu as NavigationMenu };
 
 import { AsnaDataAttrName } from '../js/asna-data-attr.js';
-
-const VAR_WIN_BKGND_POSITION = '--main-window-background-position';
+import { DdsWindow } from '../js/dds-window.js';
 
 class NavigationMenu {
     init() {
@@ -71,7 +70,7 @@ class NavigationMenu {
             nav.classList.remove('display-element-uninitialized');
         }
 
-        this.setVarBackgroundPosition();
+        DdsWindow.setVarBackgroundPosition();
 
         return container;
     }
@@ -82,16 +81,6 @@ class NavigationMenu {
 
         div.appendChild(el);
         return div;
-    }
-
-    setVarBackgroundPosition() {
-        const main = document.querySelector('main[role=main]');
-        const mainRect = main.getBoundingClientRect();
-
-        const cssVarRoot = document.documentElement.style;
-        if (cssVarRoot) {
-            cssVarRoot.setProperty(VAR_WIN_BKGND_POSITION, `${mainRect.left}px ${mainRect.top}px`);
-        }
     }
 }
 

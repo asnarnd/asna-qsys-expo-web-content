@@ -27,6 +27,8 @@ const FLAG = {
 };
 
 const NEXT_BACKGROUND_IMAGE_NAME = '*NEXT';
+const MAIN_SELECTOR = 'main[role=main]';
+const VAR_WIN_BKGND_POSITION = '--main-window-background-position';
 
 class DdsWindow {
     constructor() {
@@ -173,7 +175,7 @@ class DdsWindow {
             return {};
         }
 
-        const mainEl = form.querySelector('main[role=main]');
+        const mainEl = form.querySelector(MAIN_SELECTOR);
         const winPopup = this.createWinPopup(mainEl);
         if (winPopup) {
             mainEl.appendChild(winPopup);
@@ -183,7 +185,7 @@ class DdsWindow {
     }
 
     positionPopup(form, newElements, scroll ) {
-        const mainEl = DdsWindow.queryFormMainElement(form);
+        const mainEl = form.querySelector(MAIN_SELECTOR);
 
         if (!mainEl || !mainEl.parentElement) {
             return;
@@ -268,7 +270,7 @@ class DdsWindow {
             MonarchPageSavingForPopup();
         }
 
-        const main = form.querySelector('main[role=main]');
+        const main = form.querySelector(MAIN_SELECTOR);
         if (main) {
             HtmlElementCapture.captureAsImage(main, htmlToImageCompleteEvent, htmlToImageFilterEvent, this.htmlToImageStyle);
             return true;
@@ -326,17 +328,13 @@ class DdsWindow {
     }
 
     getMainWindowRecordSpec(form) {
-        const mainEl = DdsWindow.queryFormMainElement(form);
+        const mainEl = form.querySelector(MAIN_SELECTOR);
 
         if (mainEl) {
             return form.querySelector(`[${AsnaDataAttrName.WINDOW}]`);
         }
 
         return null;
-    }
-
-    static queryFormMainElement(form) {
-        return form.querySelector('main[role=main]');
     }
 
     static log(msg) {
@@ -369,6 +367,17 @@ class DdsWindow {
 
         DomEvents.cancelEvent(event);
         delete this.dragging;
+    }
+
+    setVarBackgroundPosition() {
+        const main = document.querySelector(MAIN_SELECTOR);
+        if (main) {
+            const mainRect = main.getBoundingClientRect();
+            const cssVarRoot = document.documentElement.style;
+            if (cssVarRoot && mainRect) {
+                cssVarRoot.setProperty(VAR_WIN_BKGND_POSITION, `${mainRect.left}px ${mainRect.top}px`);
+            }
+        }
     }
 }
 
