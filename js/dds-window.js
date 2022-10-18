@@ -125,18 +125,19 @@ class DdsWindow {
     }
 
     restoreWindowPrevPage() {
+        let imgData = '';
+
         if (!this.activeWindowRecord) {
-            return;
+            return imgData;
         }
 
         const url = window.location.pathname;
         const winName = this.activeWindowRecord.getAttribute(AsnaDataAttrName.RECORD);
 
         if (!winName || this.winRestoreStack == null ) {
-            return;
+            return imgData;
         }
 
-        let imgData = null;
         let winStackDirty = false;
 
         if (this.winRestoreStack.isEmpty()) {
@@ -165,9 +166,11 @@ class DdsWindow {
             this.serializeWinRestoreStack();
         }
 
-        if (imgData) {
+        if (imgData && imgData.length>0) {
             document.documentElement.style.setProperty('--main-window-background', `url(${imgData})`);
         }
+
+        return imgData;
     }
 
     initPopup(form) {
