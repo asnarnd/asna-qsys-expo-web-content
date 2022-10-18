@@ -99,9 +99,11 @@ class Page {
 
         this.winPopup = null;
         if (DdsWindow.activeWindowRecord!==null) {
-            DdsWindow.restoreWindowPrevPage();
-            DdsGrid.setPageHeight(thisForm);
+            const imgData = DdsWindow.restoreWindowPrevPage();
             this.winPopup = DdsWindow.initPopup(thisForm);
+            if (imgData) {
+                this.setMainSizeToImageSize(main, imgData);
+            }
         }
 
         if (this.winPopup) {
@@ -641,6 +643,20 @@ class Page {
             main.classList.remove('display-element-uninitialized');
             main.classList.add('display-element-initialized');
         }
+    }
+
+    setMainSizeToImageSize( main, imgData ) {
+        const img = document.createElement("img");
+        img.src = imgData;
+        img.onload = function () {
+            img.style.visibility = 'hidden';
+            document.body.appendChild(img);
+            const width = img.clientWidth;
+            const height = img.clientHeight;
+            document.body.removeChild(img);
+            main.style.width  = `${width}px`;
+            main.style.height = `${height}px`;
+        };
     }
 }
 
