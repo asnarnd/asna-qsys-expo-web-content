@@ -74,16 +74,9 @@ class DdsGrid {
             }
         }
         // else
-        //    Note: For Page with active WINDOW, this is done later in setPageHeight()
+        //    Note: For Page with active WINDOW, this is done later in page - setMainSizeToImageSize()
 
         subfiles.forEach((sfl) => this.completeSubfileGridRows(sfl));
-    }
-
-    setPageHeight(form) {
-        const mainEl = form.querySelector('main[role=main]');
-        if (mainEl) {
-            mainEl.style.minHeight = `${DDS_FILE_LINES * this.calcRowHeight(mainEl)}px`;
-        }
     }
 
     completeSubfileGridRows(sflEl) {
