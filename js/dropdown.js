@@ -20,8 +20,7 @@ class DropDown {
             const values = input.getAttribute(AsnaDataAttrName.VALUES);
             const valuesText = input.getAttribute(AsnaDataAttrName.VALUES_TEXT);
             this.replaceInputWithSelect(input, this.parseAttribute(values), this.parseAttribute(valuesText));
-
-            input.removeAttribute(AsnaDataAttrName.VALUES);
+            // Note: no need to remove AsnaDataAttrName.VALUES, AsnaDataAttrName.VALUES_TEXT, etc. (input was replaced).
         }
     }
 
@@ -100,21 +99,7 @@ class DropDown {
 
     replaceInputWithSelect(input, optionsValues, optionTexts) {
         const select = document.createElement('select');
-        select.style.gridColumn = input.style.gridColumn;
-        select.name = input.name;
-        if (input.tabIndex) {
-            select.tabIndex = input.tabIndex;
-        }
-
-        const rowcol = input.getAttribute(AsnaDataAttrName.ROWCOL);
-        if (rowcol) {
-            select.setAttribute(AsnaDataAttrName.ROWCOL, rowcol);
-        }
-
-        const positionCursor = input.getAttribute(AsnaDataAttrName.POSITION_CURSOR);
-        if (positionCursor !== null) {
-            select.setAttribute(AsnaDataAttrName.POSITION_CURSOR, positionCursor);
-        }
+        DropDown.copyNonValuesAttributes(select, input);
 
         for (let i = 0, l = optionsValues.length; i < l; i++) {
             const option = document.createElement('option');
@@ -139,6 +124,19 @@ class DropDown {
                     break;
                 }
             }
+        }
+    }
+
+    static copyNonValuesAttributes(target, source) {
+        if (!source.attributes) { return; }
+
+        for (let i = 0, l = source.attributes.length; i < l; i++) {
+            const attr = source.attributes[i];
+            if (!attr.name || attr.name === AsnaDataAttrName.VALUES || attr.name === AsnaDataAttrName.VALUES_TEXT) {
+                continue;
+            }
+
+            target.setAttribute(attr.name, attr.value);
         }
     }
 
