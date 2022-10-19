@@ -7,7 +7,7 @@
 
 export { thePage as Page };
 
-import { Kbd, FoldDrop, AidKeyHelper, AidKeyMapIndex } from '../js/kbd.js';
+import { Kbd, AidKeyHelper, AidKeyMapIndex } from '../js/kbd.js';
 import { DomEvents } from '../js/dom-events.js';
 import { FeedbackArea } from '../js/feedback-area.js';
 import { LetterSpacing } from '../js/letter-spacing.js';
@@ -149,8 +149,20 @@ class Page {
             const key = el.getAttribute(AsnaDataAttrName.AUTO_POSTBACK);
             el.removeAttribute(AsnaDataAttrName.AUTO_POSTBACK);
             if (key && aidKeyHelper.isEnabled(AidKeyHelper.keyToMapIndex(key))) {
+                let maxLen = 1;
+                const maxLenAtr = el.getAttribute('maxlength');
+                if (maxLenAtr) {
+                    maxLen = parseInt(maxLenAtr, 10);
+                }
+
                 if (el.tagName === "INPUT" || el.tagName === "SELECT" || el.tagName === "TEXTAREA") {
-                    el.addEventListener('input', () => { window.asnaExpo.page.pushKey(key); });
+                    el.addEventListener('input', (event) => {
+                        const target = event.target;
+                        if (maxLen <= 1 || !(typeof target.value === 'string')) { window.asnaExpo.page.pushKey(key); }
+                        if (typeof target.value === 'string' && target.value.length == maxLen) {
+                            window.asnaExpo.page.pushKey(key);
+                        }
+                    });
                 }
                 else {
                     el.addEventListener('click', () => { window.asnaExpo.page.pushKey(key); });
@@ -619,8 +631,6 @@ class Page {
             this.iconCache.update(res.shape);
         }
 
-        // const highestZIndex = DdsWindow.calcHighestZIndex();
-
         for (let i = 0, l = res.request.iconForElement.length; i < l; i++ ) {
             const icon = res.request.iconForElement[i];
             for (let j = 0, lj = icon.elementID.length; j < lj; j++) {
@@ -630,9 +640,6 @@ class Page {
                     Icons.appendSvgContent(el, shape, el.getAttribute(AsnaDataAttrName.ICON_INTERNAL_COLOR), el.getAttribute(AsnaDataAttrName.ICON_INTERNAL_TITLE));
                     el.removeAttribute(AsnaDataAttrName.ICON_INTERNAL_COLOR);
                     el.removeAttribute(AsnaDataAttrName.ICON_INTERNAL_TITLE);
-                    //if (DdsWindow.pageHasWindows) {
-                    //    el.style.zIndex = highestZIndex +3;
-                    //}
                 }
             }
         }
