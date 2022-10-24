@@ -56,9 +56,7 @@ class SubfileController {
                                 const withGridCol = SubfileController.selectAllWithGridColumns(sflEl);
                                 const sflColRange = SubfileController.calcSflMinMaxColRange(withGridCol);
 
-                                if (SubfileController.addMouseCueEvents(sflEl, initData.inputBehaviour) && !DdsWindow.pageHasWindows) {
-                                    SubfileController.constrainRecordCueing(sflEl, sflColRange);
-                                }
+                                SubfileController.addMouseCueEvents(sflEl, initData.inputBehaviour);
                                 SubfileController.removeRowGap(sflEl);
                                 sflCtrlStore.fldDrop.foldLinesPerRecord = SubfileController.querySubfileFoldLinesPerRecord(sflEl);
 
@@ -98,14 +96,6 @@ class SubfileController {
         withGridAreaList.forEach(el => result.push(el));
 
         return result;
-    }
-
-    static constrainRecordCueing(sflEl, sflColRange) {
-        if (!sflColRange.max || !sflColRange.min || isNaN(sflColRange.max) || isNaN(sflColRange.min)) {
-            return;
-        }
-        const sflRowWidth = sflColRange.max - sflColRange.min;
-        sflEl.style.width = `calc(var(--dds-grid-col-width)*${sflRowWidth})`; 
     }
 
     static calcSflMinMaxColRange(withGridCol) {
@@ -190,7 +180,7 @@ class SubfileController {
         for (let i = 0, l = gridRows.length; i < l; i++) {
             const row = gridRows[i];
 
-            if (inputBehaviour.cueCurrentRecord) { // Note: Disabling cueCurrentRecord on Window records is temporary!
+            if (inputBehaviour.cueCurrentRecord) {
                 row.addEventListener('mouseout', () => {
                     row.classList.remove(EXPO_SUBFILE_CLASS.CANDIDATE_CURRENT_RECORD);
                     // SubfileController.hideIconsInRow(row);

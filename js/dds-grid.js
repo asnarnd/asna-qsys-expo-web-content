@@ -200,7 +200,7 @@ class DdsGrid {
             return;
         }
 
-        if (maxCol > 80) {
+        if (maxCol > 0) {
             document.documentElement.style.setProperty('--dds-grid-columns', maxCol);
         }
     }
