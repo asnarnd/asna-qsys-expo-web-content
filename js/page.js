@@ -109,9 +109,8 @@ class Page {
         if (this.winPopup) {
             DdsGrid.moveRecordsToPopup(thisForm, this.winPopup);
         }
-        else {
-            DdsGrid.truncateColumns(thisForm);
-        }
+
+        DdsGrid.truncateColumns(thisForm);
 
         window.addEventListener('resize', this.handleWindowResizeEvent, false);
 

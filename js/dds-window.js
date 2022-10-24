@@ -41,8 +41,6 @@ class DdsWindow {
 
     init(form) {
         this.activeWindowRecord = null;
-        this.topLeftCorner = null;
-        this.bottomRightCorner = null;
         this.winRestoreStack = null;
 
         this.pageHasWindows = this.getBooleanFlag(form, FLAG.PAGE_HAS_WINDOWS);
