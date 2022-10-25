@@ -119,6 +119,22 @@ class SubfileController {
         return sflEl.querySelectorAll(`div[class~="${EXPO_CLASS.GRID_ROW}"], div[class~="${EXPO_CLASS.GRID_EMPTY_ROW}"]`);
     }
 
+    static selectTableRows(sflEl) { // Note excludes table headers (th)
+        const nonHeaderTd = sflEl.querySelectorAll('tr td'); // TO-DO: there may be a faster way ...
+        if (nonHeaderTd.length == 0) { return nonHeaderTd; }
+
+        let result = [];
+
+        for (let i = 0, l = nonHeaderTd.length; i < l; i++) {
+            const td = nonHeaderTd[i];
+            const tr = td.parentElement;
+            if (tr && !result.find((e) => e === tr)) {
+                result.push(tr);
+            }
+        }
+        return result;
+    }
+
     static queryLikelyCurrentSflRecord() {
         let likely = document.querySelector(`[class~="${EXPO_SUBFILE_CLASS.CURRENT_RECORD}"]`);
         if (likely) {
@@ -176,9 +192,17 @@ class SubfileController {
         }
 
         const gridRows = SubfileController.selectAllRows(sflEl);
+        let gridTableRows = [];
 
-        for (let i = 0, l = gridRows.length; i < l; i++) {
-            const row = gridRows[i];
+        const nonSubfileAttr = sflEl.getAttribute(AsnaDataAttrName.NON_SUBFILE);
+        if (nonSubfileAttr && nonSubfileAttr === 'true') { // Grid-Box
+            gridTableRows = SubfileController.selectTableRows(sflEl);
+        }
+
+        let rows = [...gridRows, ...gridTableRows];
+
+        for (let i = 0, l = rows.length; i < l; i++) {
+            const row = rows[i];
 
             if (inputBehaviour.cueCurrentRecord) {
                 row.addEventListener('mouseout', () => {
