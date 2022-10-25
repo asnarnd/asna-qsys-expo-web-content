@@ -321,7 +321,7 @@ class Page {
 
         const form = this.getForm();
         let sflCtrlStore = SubfilePagingStore.getSflCtlStore(res.request.recordName);
-        let sflEl = DdsGrid.findSubfile(res.request.recordName);
+        let sflEl = DdsGrid.findRowSpanDiv(res.request.recordName);
         if (!sflEl || !res.html || !sflCtrlStore) { return; } // Ignore - for now ...
 
         if (typeof (MonarchSubfilePageChanging) === 'function') {   // Notify user-code
@@ -364,7 +364,7 @@ class Page {
         sflEl.innerHTML = res.html;
 
         // Re-apply style changes marked by 'data-asna-xxx' attributes
-        DdsGrid.completeSubfileGridRows(sflEl);
+        DdsGrid.completeRowSpanGridRows(sflEl);
         this.stretchConstantsText();
         this.addOnClickPushKeyEventListener();
         this.applyInvertFontColors();

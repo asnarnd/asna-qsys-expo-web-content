@@ -77,7 +77,7 @@ class SubfilePaging {
         let sflCtrlStore = SubfilePagingStore.getSflCtlStore(sflCtrlFormatName);
         if (!sflCtrlStore || ! sflCtrlStore.sflEdits) { return; }
 
-        let sflEl = DdsGrid.findSubfile(sflCtrlFormatName);
+        let sflEl = DdsGrid.findRowSpanDiv(sflCtrlFormatName);
         if (!sflEl) { return; }
 
         const edits = sflCtrlStore.sflEdits;
