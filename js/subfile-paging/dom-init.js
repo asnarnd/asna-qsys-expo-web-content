@@ -191,15 +191,7 @@ class SubfileController {
             return false;
         }
 
-        const gridRows = SubfileController.selectAllRows(sflEl);
-        let gridTableRows = [];
-
-        const nonSubfileAttr = sflEl.getAttribute(AsnaDataAttrName.NON_SUBFILE);
-        if (nonSubfileAttr && nonSubfileAttr === 'true') { // Grid-Box
-            gridTableRows = SubfileController.selectTableRows(sflEl);
-        }
-
-        let rows = [...gridRows, ...gridTableRows];
+        const rows = SubfileController.selectAllRowsIncludeTR(sflEl);
 
         for (let i = 0, l = rows.length; i < l; i++) {
             const row = rows[i];
@@ -233,6 +225,19 @@ class SubfileController {
         return true;
     }
 
+    static selectAllRowsIncludeTR(sflEl) {
+        const gridRows = SubfileController.selectAllRows(sflEl);
+        let gridTableRows = [];
+
+        const nonSubfileAttr = sflEl.getAttribute(AsnaDataAttrName.NON_SUBFILE);
+        if (nonSubfileAttr && nonSubfileAttr === 'true') { // Grid-Box
+            gridTableRows = SubfileController.selectTableRows(sflEl);
+        }
+
+        let rows = [...gridRows, ...gridTableRows];
+        return rows;
+    }
+
     static removeRowGap(sflEl) {
         const gridRows = SubfileController.selectAllRows(sflEl);
         gridRows.forEach((row) => { row.classList.add(EXPO_CLASS.GRID_ROW_NO_GAP); });
@@ -246,9 +251,10 @@ class SubfileController {
 
     static setCurrentSelection(sflEl, row, cueCurrentRecord) {
         if (cueCurrentRecord) {
-            const gridRows = SubfileController.selectAllRows(sflEl);
-            for (let i = 0, l = gridRows.length; i < l; i++) {
-                gridRows[i].classList.remove(EXPO_SUBFILE_CLASS.CURRENT_RECORD);
+            const rows = SubfileController.selectAllRowsIncludeTR(sflEl);
+
+            for (let i = 0, l = rows.length; i < l; i++) {
+                rows[i].classList.remove(EXPO_SUBFILE_CLASS.CURRENT_RECORD);
             }
 
             row.classList.add(EXPO_SUBFILE_CLASS.CURRENT_RECORD);
