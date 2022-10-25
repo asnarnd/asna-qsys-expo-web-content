@@ -179,6 +179,7 @@ body {
     padding-top: var(--dds-grid-row-padding-top);
     padding-bottom: var(--dds-grid-row-padding-bottom);
     width: fit-content;
+    width: -webkit-fit-content;
 }
 
 .dds-grid-empty-row {
@@ -186,11 +187,19 @@ body {
     padding-bottom: var(--dds-grid-row-padding-bottom);
     min-height: calc(var(--body-font-size) * 1.1429);
     width: fit-content;
+    width: -webkit-fit-content;
 }
 
 .dds-row-no-gap { /* Subfile rows look better without gaps between rows, particularly when using reverse-image */
     padding-top: 0;
     padding-bottom: 0;
+}
+
+.dds-grid-row-span {
+    display: grid;
+    grid-template-columns: repeat(var(--dds-grid-columns), var(--dds-grid-col-width));
+    width: fit-content;
+    width: -webkit-fit-content;
 }
 
 /*-------------------------------------------*\
