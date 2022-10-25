@@ -95,7 +95,12 @@ class DdsGrid {
         const requestedRows = (toRow - fromRow) + 1;
 
         const nonSubfileAttr = rowSpan.getAttribute(AsnaDataAttrName.NON_SUBFILE);
-        if (!nonSubfileAttr || nonSubfileAttr !== 'true') {
+
+        if (nonSubfileAttr && nonSubfileAttr === 'true') { // Grid-Box
+            rowSpan.classList.add(CLASS_GRID_ROW_SPAN);
+            rowSpan.style.gridTemplateRows = `repeat(${requestedRows}, calc(var(--dds-grid-row-padding-top) + var(--dds-grid-row-padding-bottom) + ( var(--body-font-size) * 1.1429 ))`;
+        }
+        else {
             const rows = rowSpan.querySelectorAll(`div[class~=${CLASS_GRID_ROW}]`);
             const emptyRows = rowSpan.querySelectorAll(`div[class~=${CLASS_GRID_EMPTY_ROW}]`);
 
@@ -104,10 +109,6 @@ class DdsGrid {
             if (toAddCount > 0) {
                 this.appendEmptyRows(toAddCount, rowSpan, fromRow + existingRows)
             }
-        }
-        else { // For non-subfile add class 'dds-grid-row-span' 
-            rowSpan.classList.add(CLASS_GRID_ROW_SPAN);
-            rowSpan.style.gridTemplateRows = `repeat(${requestedRows}, calc(var(--dds-grid-row-padding-top) + var(--dds-grid-row-padding-bottom) + ( var(--body-font-size) * 1.1429 ))`;
         }
     }
 
