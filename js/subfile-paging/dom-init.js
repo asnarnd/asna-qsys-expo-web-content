@@ -49,7 +49,7 @@ class SubfileController {
                         const initData = JSON.parse(encInitData);
                         const sflCtrlStore = SubfilePagingStore.register(initData);
                         if (!SubfileController.hasNestedSflController(sflcDiv)) {
-                            const sflEl = DdsGrid.findSubfile(initData.name, sflcDiv);
+                            const sflEl = DdsGrid.findRowSpanDiv(initData.name, sflcDiv);
 
                             if (sflEl) {
                                 sflCtrlStore.initialPageState = SubfileState.rememberPageState(sflEl);
