@@ -235,7 +235,9 @@ body {
 
 .dds-cells-suitable-for-icons { /* allow icon to show larger without increating dds-row height */
     line-height: 0;
-    padding: 0 !important; /* Is there a way to avoid !important here?*/
+    padding: 0 !important;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .dds-preserve-blanks {
