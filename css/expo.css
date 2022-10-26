@@ -417,7 +417,6 @@ body {
     border-collapse: collapse;
     width: 100%;
     border: 1px solid lightgray;
-    overflow: hidden;
 }
 
 .dds-table td {
@@ -442,6 +441,11 @@ body {
 
 .dds-table tbody {
     background-color: whitesmoke;
+}
+
+.dds-table thead th {
+    position: sticky;
+    top: 0;
 }
 
 /*-------------------------------------------*\
