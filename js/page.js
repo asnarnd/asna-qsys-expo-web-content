@@ -322,6 +322,7 @@ class Page {
         const form = this.getForm();
         let sflCtrlStore = SubfilePagingStore.getSflCtlStore(res.request.recordName);
         let recordsContainer = DdsGrid.findRowSpanDiv(res.request.recordName);
+        const divRowSpan = recordsContainer;
         if (!recordsContainer || !res.html || !sflCtrlStore) { return; } // Ignore - for now ...
 
         let tBody = recordsContainer.querySelector('tbody');
@@ -369,7 +370,9 @@ class Page {
         recordsContainer.innerHTML = res.html;
 
         // Re-apply style changes marked by 'data-asna-xxx' attributes
-        DdsGrid.completeRowSpanGridRows(recordsContainer);
+        if (!tBody) {
+            DdsGrid.completeRowSpanGridRows(recordsContainer);
+        }
         this.stretchConstantsText();
         this.addOnClickPushKeyEventListener();
         this.applyInvertFontColors();
@@ -385,16 +388,16 @@ class Page {
         const withGridCol = SubfileController.selectAllWithGridColumns(recordsContainer);
         const sflColRange = SubfileController.calcSflMinMaxColRange(withGridCol);
 
-        if (SubfileController.addMouseCueEvents(recordsContainer, sflCtrlStore.inputBehaviour) && !DdsWindow.pageHasWindows) {
-            SubfileController.constrainRecordCueing(recordsContainer, sflColRange);
-        }
+        SubfileController.addMouseCueEvents(divRowSpan, sflCtrlStore.inputBehaviour);
 
-        SubfileController.removeRowGap(recordsContainer);
+        if (!tBody) {
+            SubfileController.removeRowGap(recordsContainer);
+        }
 
         if (sflCtrlStore.sflEnd.showSubfileEnd) {
             const showAtBottom = sflCtrlStore.sflRecords.isLastPage === "true" ? sflCtrlStore.sflEnd.isSufileEnd : false;
             const icon = SubfileController.addSubfileEndCue(
-                recordsContainer,
+                divRowSpan,
                 showAtBottom,
                 showAtBottom ? sflCtrlStore.sflEnd.textOn : sflCtrlStore.sflEnd.textOff,
                 sflColRange
