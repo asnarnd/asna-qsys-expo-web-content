@@ -416,7 +416,7 @@ body {
     /* display: block;  Enable to get scrolls inside Table */
     overflow: auto;
     table-layout: auto;
-    /* border-collapse: collapse; */
+    border-collapse: collapse; /* disable to get separated */
     width: 100%;
     border: 1px solid lightgray;
     border-spacing: 0px; /* Similar to border-collapse: collapse (collapse has issue with sticky headers)*/

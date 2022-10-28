@@ -95,15 +95,23 @@ class DdsGrid {
         const requestedRows = (toRow - fromRow) + 1;
 
         if (rowSpan.classList.contains(CLASS_GRID_ROW_SPAN)) { // RowSpan Panel
-            rowSpan.style.gridTemplateRows = `repeat(${requestedRows}, calc(var(--dds-grid-row-padding-top) + var(--dds-grid-row-padding-bottom) + ( var(--body-font-size) * 1.1429 ))`;
+            const cssVarRoot = document.documentElement.style;
+            const a = 'var(--dds-grid-row-padding-top)';
+            const b = 'calc(var(--body-font-size) * 1.1429)';
+            const c = 'var(--dds-grid-row-padding-bottom)';
+
+            rowSpan.style.gridTemplateRows = `repeat(${requestedRows}, calc(${a} + ${b} + ${c}))`;
 
             const colSpanOverride = rowSpan.getAttribute(AsnaDataAttrName.GRID_PANEL_SPAN_STYLE_COL_SPAN);
             if (colSpanOverride) {
                 const colCount = parseInt(colSpanOverride);
-                if (colCount > 0)
+                if (colCount > 0) {
                     rowSpan.style.gridTemplateColumns = `repeat(${colCount}, var(--dds-grid-col-width))`;
+                }
             }
-            // else CLASS_GRID_ROW_SPAN already has the style set (i.e. repeat(var(--dds-grid-columns), var(--dds-grid-col-width)) ).
+            else {
+                // CLASS_GRID_ROW_SPAN already has the template cols set.
+            }
         }
         else {
             const rows = rowSpan.querySelectorAll(`div[class~=${CLASS_GRID_ROW}]`);

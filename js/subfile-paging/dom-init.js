@@ -20,7 +20,8 @@ const HIDDEN_NAME_FOLD_LINES_PER_RECORD = 'fold-lines-per-record';
 const EXPO_CLASS = {
     GRID_ROW: 'dds-grid-row',
     GRID_EMPTY_ROW: 'dds-grid-empty-row',
-    GRID_ROW_NO_GAP: 'dds-row-no-gap'
+    GRID_ROW_NO_GAP: 'dds-row-no-gap',
+    GRID_ROW_SPAN: 'dds-grid-row-span'
 };
 
 const EXPO_SUBFILE_CLASS = {
@@ -229,8 +230,7 @@ class SubfileController {
         const gridRows = SubfileController.selectAllRows(sflEl);
         let gridTableRows = [];
 
-        const nonSubfileAttr = sflEl.getAttribute(AsnaDataAttrName.NON_SUBFILE);
-        if (nonSubfileAttr && nonSubfileAttr === 'true') { // Grid-Box
+        if (sflEl.classList.contains(EXPO_CLASS.GRID_ROW_SPAN)) {
             gridTableRows = SubfileController.selectTableRows(sflEl);
         }
 
