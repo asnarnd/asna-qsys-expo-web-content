@@ -94,11 +94,16 @@ class DdsGrid {
 
         const requestedRows = (toRow - fromRow) + 1;
 
-        const nonSubfileAttr = rowSpan.getAttribute(AsnaDataAttrName.NON_SUBFILE);
-
-        if (nonSubfileAttr && nonSubfileAttr === 'true') { // Grid-Box
-            rowSpan.classList.add(CLASS_GRID_ROW_SPAN);
+        if (rowSpan.classList.contains(CLASS_GRID_ROW_SPAN)) { // RowSpan Panel
             rowSpan.style.gridTemplateRows = `repeat(${requestedRows}, calc(var(--dds-grid-row-padding-top) + var(--dds-grid-row-padding-bottom) + ( var(--body-font-size) * 1.1429 ))`;
+
+            const colSpanOverride = rowSpan.getAttribute(AsnaDataAttrName.GRID_PANEL_SPAN_STYLE_COL_SPAN);
+            if (colSpanOverride) {
+                const colCount = parseInt(colSpanOverride);
+                if (colCount > 0)
+                    rowSpan.style.gridTemplateColumns = `repeat(${colCount}, var(--dds-grid-col-width))`;
+            }
+            // else CLASS_GRID_ROW_SPAN already has the style set (i.e. repeat(var(--dds-grid-columns), var(--dds-grid-col-width)) ).
         }
         else {
             const rows = rowSpan.querySelectorAll(`div[class~=${CLASS_GRID_ROW}]`);
