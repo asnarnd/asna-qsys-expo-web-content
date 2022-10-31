@@ -139,7 +139,11 @@ class FeedbackArea {
     }
 
     getHiddenInputRowRecNumber(row) {
-        const siblingHidden = row.parentElement.querySelectorAll('input[type="hidden"][name][value]')
+        let parent = row;
+        if (row.tagName !== 'TR') { // Normal subfile.
+            parent = row.parentElement;
+        }
+        const siblingHidden = parent.querySelectorAll('input[type="hidden"][name][value]')
         for (let i = 0, l = siblingHidden.length; i < l; i++) {
             const input = siblingHidden[i];
             if (input.getAttribute('name').endsWith('._RecordNumber')) {

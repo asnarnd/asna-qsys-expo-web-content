@@ -20,7 +20,8 @@ const HIDDEN_NAME_FOLD_LINES_PER_RECORD = 'fold-lines-per-record';
 const EXPO_CLASS = {
     GRID_ROW: 'dds-grid-row',
     GRID_EMPTY_ROW: 'dds-grid-empty-row',
-    GRID_ROW_NO_GAP: 'dds-row-no-gap'
+    GRID_ROW_NO_GAP: 'dds-row-no-gap',
+    GRID_ROW_SPAN: 'dds-grid-row-span'
 };
 
 const EXPO_SUBFILE_CLASS = {
@@ -49,16 +50,14 @@ class SubfileController {
                         const initData = JSON.parse(encInitData);
                         const sflCtrlStore = SubfilePagingStore.register(initData);
                         if (!SubfileController.hasNestedSflController(sflcDiv)) {
-                            const sflEl = DdsGrid.findSubfile(initData.name, sflcDiv);
+                            const sflEl = DdsGrid.findRowSpanDiv(initData.name, sflcDiv);
 
                             if (sflEl) {
                                 sflCtrlStore.initialPageState = SubfileState.rememberPageState(sflEl);
                                 const withGridCol = SubfileController.selectAllWithGridColumns(sflEl);
                                 const sflColRange = SubfileController.calcSflMinMaxColRange(withGridCol);
 
-                                if (SubfileController.addMouseCueEvents(sflEl, initData.inputBehaviour) && !DdsWindow.pageHasWindows) {
-                                    SubfileController.constrainRecordCueing(sflEl, sflColRange);
-                                }
+                                SubfileController.addMouseCueEvents(sflEl, initData.inputBehaviour);
                                 SubfileController.removeRowGap(sflEl);
                                 sflCtrlStore.fldDrop.foldLinesPerRecord = SubfileController.querySubfileFoldLinesPerRecord(sflEl);
 
@@ -100,14 +99,6 @@ class SubfileController {
         return result;
     }
 
-    static constrainRecordCueing(sflEl, sflColRange) {
-        if (!sflColRange.max || !sflColRange.min || isNaN(sflColRange.max) || isNaN(sflColRange.min)) {
-            return;
-        }
-        const sflRowWidth = sflColRange.max - sflColRange.min;
-        sflEl.style.width = `calc(var(--dds-grid-col-width)*${sflRowWidth})`; 
-    }
-
     static calcSflMinMaxColRange(withGridCol) {
         let minCol = 999;
         let maxCol = 1;
@@ -127,6 +118,22 @@ class SubfileController {
 
     static selectAllRows(sflEl) {
         return sflEl.querySelectorAll(`div[class~="${EXPO_CLASS.GRID_ROW}"], div[class~="${EXPO_CLASS.GRID_EMPTY_ROW}"]`);
+    }
+
+    static selectTableRows(sflEl) { // Note excludes table headers (th)
+        const nonHeaderTd = sflEl.querySelectorAll('tr td'); // TO-DO: there may be a faster way ...
+        if (nonHeaderTd.length == 0) { return nonHeaderTd; }
+
+        let result = [];
+
+        for (let i = 0, l = nonHeaderTd.length; i < l; i++) {
+            const td = nonHeaderTd[i];
+            const tr = td.parentElement;
+            if (tr && !result.find((e) => e === tr)) {
+                result.push(tr);
+            }
+        }
+        return result;
     }
 
     static queryLikelyCurrentSflRecord() {
@@ -185,12 +192,12 @@ class SubfileController {
             return false;
         }
 
-        const gridRows = SubfileController.selectAllRows(sflEl);
+        const rows = SubfileController.selectAllRowsIncludeTR(sflEl);
 
-        for (let i = 0, l = gridRows.length; i < l; i++) {
-            const row = gridRows[i];
+        for (let i = 0, l = rows.length; i < l; i++) {
+            const row = rows[i];
 
-            if (inputBehaviour.cueCurrentRecord) { // Note: Disabling cueCurrentRecord on Window records is temporary!
+            if (inputBehaviour.cueCurrentRecord) {
                 row.addEventListener('mouseout', () => {
                     row.classList.remove(EXPO_SUBFILE_CLASS.CANDIDATE_CURRENT_RECORD);
                     // SubfileController.hideIconsInRow(row);
@@ -219,6 +226,18 @@ class SubfileController {
         return true;
     }
 
+    static selectAllRowsIncludeTR(sflEl) {
+        const gridRows = SubfileController.selectAllRows(sflEl);
+        let gridTableRows = [];
+
+        if (sflEl.classList.contains(EXPO_CLASS.GRID_ROW_SPAN)) {
+            gridTableRows = SubfileController.selectTableRows(sflEl);
+        }
+
+        let rows = [...gridRows, ...gridTableRows];
+        return rows;
+    }
+
     static removeRowGap(sflEl) {
         const gridRows = SubfileController.selectAllRows(sflEl);
         gridRows.forEach((row) => { row.classList.add(EXPO_CLASS.GRID_ROW_NO_GAP); });
@@ -232,9 +251,10 @@ class SubfileController {
 
     static setCurrentSelection(sflEl, row, cueCurrentRecord) {
         if (cueCurrentRecord) {
-            const gridRows = SubfileController.selectAllRows(sflEl);
-            for (let i = 0, l = gridRows.length; i < l; i++) {
-                gridRows[i].classList.remove(EXPO_SUBFILE_CLASS.CURRENT_RECORD);
+            const rows = SubfileController.selectAllRowsIncludeTR(sflEl);
+
+            for (let i = 0, l = rows.length; i < l; i++) {
+                rows[i].classList.remove(EXPO_SUBFILE_CLASS.CURRENT_RECORD);
             }
 
             row.classList.add(EXPO_SUBFILE_CLASS.CURRENT_RECORD);

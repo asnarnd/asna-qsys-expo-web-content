@@ -109,9 +109,8 @@ class Page {
         if (this.winPopup) {
             DdsGrid.moveRecordsToPopup(thisForm, this.winPopup);
         }
-        else {
-            DdsGrid.truncateColumns(thisForm);
-        }
+
+        DdsGrid.truncateColumns(thisForm);
 
         window.addEventListener('resize', this.handleWindowResizeEvent, false);
 
@@ -322,11 +321,17 @@ class Page {
 
         const form = this.getForm();
         let sflCtrlStore = SubfilePagingStore.getSflCtlStore(res.request.recordName);
-        let sflEl = DdsGrid.findSubfile(res.request.recordName);
-        if (!sflEl || !res.html || !sflCtrlStore) { return; } // Ignore - for now ...
+        let recordsContainer = DdsGrid.findRowSpanDiv(res.request.recordName);
+        const divRowSpan = recordsContainer;
+        if (!recordsContainer || !res.html || !sflCtrlStore) { return; } // Ignore - for now ...
+
+        let tBody = recordsContainer.querySelector('tbody');
+        if (tBody) {
+            recordsContainer = tBody;
+        }
 
         if (typeof (MonarchSubfilePageChanging) === 'function') {   // Notify user-code
-            MonarchSubfilePageChanging(res.request.recordName, sflEl, res.request.from, res.request.request.to - 1, res.request.mode);
+            MonarchSubfilePageChanging(res.request.recordName, recordsContainer, res.request.from, res.request.request.to - 1, res.request.mode);
         }
 
         const oldTopRrn = sflCtrlStore.current.topRrn;
@@ -340,7 +345,7 @@ class Page {
             sflCtrlStore.fldDrop.isFolded = ! res.request.wantDropped; 
         }
 
-        let currentPageState = SubfileState.rememberPageState(sflEl);
+        let currentPageState = SubfileState.rememberPageState(recordsContainer);
 
         // Before replacing Page, save edits by comparing initialState with state of subfile page about to be replaced.
         let currentPageEdits = SubfileState.getPageInputStateChanges(sflCtrlStore.initialPageState, currentPageState);
@@ -353,19 +358,21 @@ class Page {
 
         let cursorPosRrnOffset = -1;
         let lastSflFldWithCursorName = '';
-        const needToRestoreCursor = PositionCursor.isCursorAtSubfile(sflEl);
+        const needToRestoreCursor = PositionCursor.isCursorAtSubfile(recordsContainer);
         if (needToRestoreCursor) {
             lastSflFldWithCursorName = PositionCursor.activeFieldName();
-            const rrnFld = Subfile.findHiddenRrn(sflEl, lastSflFldWithCursorName);
+            const rrnFld = Subfile.findHiddenRrn(recordsContainer, lastSflFldWithCursorName);
             if (rrnFld && rrnFld.value ) {
                 cursorPosRrnOffset = parseInt(rrnFld.value, 10) - oldTopRrn;
             }
         }
 
-        sflEl.innerHTML = res.html;
+        recordsContainer.innerHTML = res.html;
 
         // Re-apply style changes marked by 'data-asna-xxx' attributes
-        DdsGrid.completeSubfileGridRows(sflEl);
+        if (!tBody) {
+            DdsGrid.completeRowSpanGridRows(recordsContainer);
+        }
         this.stretchConstantsText();
         this.addOnClickPushKeyEventListener();
         this.applyInvertFontColors();
@@ -377,20 +384,20 @@ class Page {
         this.addOnFocusEventListener();
 
         // Now restore the edits if this page had been seen before
-        SubfileState.RestoreInputChanges(sflEl, sflCtrlStore.sflEdits);
-        const withGridCol = SubfileController.selectAllWithGridColumns(sflEl);
+        SubfileState.RestoreInputChanges(recordsContainer, sflCtrlStore.sflEdits);
+        const withGridCol = SubfileController.selectAllWithGridColumns(recordsContainer);
         const sflColRange = SubfileController.calcSflMinMaxColRange(withGridCol);
 
-        if (SubfileController.addMouseCueEvents(sflEl, sflCtrlStore.inputBehaviour) && !DdsWindow.pageHasWindows) {
-            SubfileController.constrainRecordCueing(sflEl, sflColRange);
-        }
+        SubfileController.addMouseCueEvents(divRowSpan, sflCtrlStore.inputBehaviour);
 
-        SubfileController.removeRowGap(sflEl);
+        if (!tBody) {
+            SubfileController.removeRowGap(recordsContainer);
+        }
 
         if (sflCtrlStore.sflEnd.showSubfileEnd) {
             const showAtBottom = sflCtrlStore.sflRecords.isLastPage === "true" ? sflCtrlStore.sflEnd.isSufileEnd : false;
             const icon = SubfileController.addSubfileEndCue(
-                sflEl,
+                divRowSpan,
                 showAtBottom,
                 showAtBottom ? sflCtrlStore.sflEnd.textOn : sflCtrlStore.sflEnd.textOff,
                 sflColRange
@@ -404,14 +411,14 @@ class Page {
                 this.initIcons(sflEndIcons);
         }
 
-        sflCtrlStore.initialPageState = SubfileState.rememberPageState(sflEl); // Initial State of new page.
+        sflCtrlStore.initialPageState = SubfileState.rememberPageState(recordsContainer); // Initial State of new page.
 
         if (needToRestoreCursor) {
             let newFldWithCursorName = '';
             if (cursorPosRrnOffset >= 0 && lastSflFldWithCursorName) {
                 newFldWithCursorName = Subfile.makeFieldName(lastSflFldWithCursorName, sflCtrlStore.current.topRrn + cursorPosRrnOffset);
             }
-            PositionCursor.restoreFocus(sflEl, newFldWithCursorName, res.request.requestorAidKey);
+            PositionCursor.restoreFocus(recordsContainer, newFldWithCursorName, res.request.requestorAidKey);
         }
         /*
         setLowestRRN(jsonSflCtrl.topRrn);
@@ -423,7 +430,7 @@ class Page {
         */
 
         if (typeof (MonarchSubfilePageChanged) === 'function') {   // Notify user-code
-            MonarchSubfilePageChanged(res.request.recordName, sflEl, res.request.from, res.request.request.to - 1, res.request.mode);
+            MonarchSubfilePageChanged(res.request.recordName, recordsContainer, res.request.from, res.request.request.to - 1, res.request.mode);
         }
     }
 

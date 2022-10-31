@@ -63,5 +63,6 @@ const AsnaDataAttrName = {
     AUTO_POSTBACK: 'data-asna-autopostback',
     CHECK_MANDATORY: 'data-asna-check-mandatory',
     LEFT_PAD: 'data-asna-leftpad',
-    SUBFILE_MSG_TEXT: 'data-asna-msg-text' // ** Experimental (see Case 20807: Message Subfile Errors have no way to "Reset" the error
+    SUBFILE_MSG_TEXT: 'data-asna-msg-text', // ** Experimental (see Case 20807: Message Subfile Errors have no way to "Reset" the error
+    GRID_PANEL_SPAN_STYLE_COL_SPAN: 'data-asna-grid-panel-col-span'
 }

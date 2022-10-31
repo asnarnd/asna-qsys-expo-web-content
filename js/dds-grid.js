@@ -15,6 +15,7 @@ const CLASS_GRID_ROW = 'dds-grid-row';
 const CLASS_GRID_EMPTY_ROW = 'dds-grid-empty-row';
 const CLASS_PRESERVE_BLANKS = 'dds-preserve-blanks';
 const CLASS_WINDOW_POPUP_RECORD_CONTAINER = 'dds-window-popup-record-container';
+const CLASS_GRID_ROW_SPAN = 'dds-grid-row-span';
 
 class DdsGrid {
     completeGridRows(form, activeWindowRecord) {
@@ -27,7 +28,7 @@ class DdsGrid {
         let lastRowVal = 0;
         let lastRow = null;
 
-        let subfiles = [];
+        let rowSpanCollection = [];
 
         for (let r = 0; r < records.length; r++) {
             const record = records[r];
@@ -56,7 +57,7 @@ class DdsGrid {
                 }
 
                 if (range.length === 2) {
-                    subfiles.push(row);
+                    rowSpanCollection.push(row);
                 }
                 lastRowVal = range.length === 2 ? range[1] : range[0];
                 lastRowVal = parseInt(lastRowVal, 10);
@@ -76,29 +77,51 @@ class DdsGrid {
         // else
         //    Note: For Page with active WINDOW, this is done later in page - setMainSizeToImageSize()
 
-        subfiles.forEach((sfl) => this.completeSubfileGridRows(sfl));
+        rowSpanCollection.forEach((rowSpan) => this.completeRowSpanGridRows(rowSpan));
     }
 
-    completeSubfileGridRows(sflEl) {
-        const rowSpan = sflEl.getAttribute(AsnaDataAttrName.ROW);
-        if (!rowSpan) { return; }  // Unexpected
+    completeRowSpanGridRows(rowSpan) {
+        const rowRangeAttr = rowSpan.getAttribute(AsnaDataAttrName.ROW);
+        if (!rowRangeAttr) { return; }  // Unexpected
 
-        const range = rowSpan.split('-');
-        if (range.length !== 2) { return; }  // Unexpected
+        const rowRange = rowRangeAttr.split('-');
+        if (rowRange.length !== 2) { return; }  // Unexpected
 
-        const fromRow = parseInt(range[0], 10);
-        const toRow = parseInt(range[1], 10);
+        const fromRow = parseInt(rowRange[0], 10);
+        const toRow = parseInt(rowRange[1], 10);
 
         if (fromRow < 0 || toRow < fromRow) { return; }  // Unexpected
 
-        const rows = sflEl.querySelectorAll(`div[class~=${CLASS_GRID_ROW}]`);
-        const emptyRows = sflEl.querySelectorAll(`div[class~=${CLASS_GRID_EMPTY_ROW}]`);
+        const requestedRows = (toRow - fromRow) + 1;
 
-        const subfilePage = (toRow - fromRow) + 1;
-        const existingRows = rows.length + emptyRows.length;
-        const toAddCount = subfilePage - existingRows;
-        if (toAddCount > 0) {
-            this.appendEmptyRows(toAddCount, sflEl, fromRow + existingRows)
+        if (rowSpan.classList.contains(CLASS_GRID_ROW_SPAN)) { // RowSpan Panel
+            const cssVarRoot = document.documentElement.style;
+            const a = 'var(--dds-grid-row-padding-top)';
+            const b = 'calc(var(--body-font-size) * 1.1429)';
+            const c = 'var(--dds-grid-row-padding-bottom)';
+
+            rowSpan.style.gridTemplateRows = `repeat(${requestedRows}, calc(${a} + ${b} + ${c}))`;
+
+            const colSpanOverride = rowSpan.getAttribute(AsnaDataAttrName.GRID_PANEL_SPAN_STYLE_COL_SPAN);
+            if (colSpanOverride) {
+                const colCount = parseInt(colSpanOverride);
+                if (colCount > 0) {
+                    rowSpan.style.gridTemplateColumns = `repeat(${colCount}, var(--dds-grid-col-width))`;
+                }
+            }
+            else {
+                // CLASS_GRID_ROW_SPAN already has the template cols set.
+            }
+        }
+        else {
+            const rows = rowSpan.querySelectorAll(`div[class~=${CLASS_GRID_ROW}]`);
+            const emptyRows = rowSpan.querySelectorAll(`div[class~=${CLASS_GRID_EMPTY_ROW}]`);
+
+            const existingRows = rows.length + emptyRows.length;
+            const toAddCount = requestedRows - existingRows;
+            if (toAddCount > 0) {
+                this.appendEmptyRows(toAddCount, rowSpan, fromRow + existingRows)
+            }
         }
     }
 
@@ -200,7 +223,7 @@ class DdsGrid {
             return;
         }
 
-        if (maxCol > 80) {
+        if (maxCol > 0) {
             document.documentElement.style.setProperty('--dds-grid-columns', maxCol);
         }
     }
@@ -255,7 +278,7 @@ class DdsGrid {
     }
 
 
-    findSubfile(sflCtrlName, sflCtl) {
+    findRowSpanDiv(sflCtrlName, sflCtl) {
         if (!sflCtl) {
             sflCtl = document.querySelector(`[${AsnaDataAttrName.RECORD}="${sflCtrlName}"]`);
         }
