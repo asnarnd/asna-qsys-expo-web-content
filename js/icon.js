@@ -101,6 +101,7 @@ class Icons {
         let xExtent = shape.xExtent ? parseInt(shape.xExtent,10) : 1536;
 
         if (xExtent < yExtent) {
+            xOrigin = -((yExtent - xExtent) / 2);
             xExtent = yExtent;
         }
 
