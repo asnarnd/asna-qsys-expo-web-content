@@ -9,6 +9,7 @@ export { theNavMenu as NavigationMenu };
 
 import { AsnaDataAttrName } from '../js/asna-data-attr.js';
 import { DdsWindow } from '../js/dds-window.js';
+import { Base64 } from '../js/base-64.js';
 
 class NavigationMenu {
     init() {
@@ -81,6 +82,27 @@ class NavigationMenu {
 
         div.appendChild(el);
         return div;
+    }
+
+    serializeCommandKeyData(nav) {
+        const buttons = nav.querySelectorAll('a[role="button"]');
+        let result = [];
+        if (!buttons) { return result; }
+
+        for (let i = 0, l = buttons.length; i < l; i++) {
+            let btn = buttons[i];
+            let command = {};
+            command.title = btn.title;
+            command.text = btn.text;
+            command.pushKeyParms = {};
+            const encPushKeyParms = btn.getAttribute(AsnaDataAttrName.ONCLICK_PUSHKEY);
+            if (encPushKeyParms) {
+               command.pushKeyParms= JSON.parse(Base64.decode(encPushKeyParms));
+            }
+            result.push(command);
+        }
+
+        return result;
     }
 }
 
