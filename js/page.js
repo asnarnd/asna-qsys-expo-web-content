@@ -70,6 +70,7 @@ class Page {
         if (nav) {
             const location = nav.getAttribute(AsnaDataAttrName.ACTIVEKEY_LOCATION);
             if (location === 'hidden') {
+                window.asnaExpo.page.activeFunctionKeys = NavigationMenu.serializeCommandKeyData(nav);
                 nav.parentNode.removeChild(nav);
             }
         }
@@ -696,5 +697,6 @@ if (!window.asnaExpo) {
 
 window.asnaExpo.page = {
     pushKey: thePage.pushKey,
-    lastFocus: null
+    lastFocus: null,
+    activeFunctionKeys: []
 }
