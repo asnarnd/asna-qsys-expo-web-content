@@ -50,21 +50,21 @@ class SubfileController {
                         const initData = JSON.parse(encInitData);
                         const sflCtrlStore = SubfilePagingStore.register(initData);
                         if (!SubfileController.hasNestedSflController(sflcDiv)) {
-                            const sflEl = DdsGrid.findRowSpanDiv(initData.name, sflcDiv);
+                            const recordsContainer = DdsGrid.findRowSpanDiv(initData.name, sflcDiv);
 
-                            if (sflEl) {
-                                sflCtrlStore.initialPageState = SubfileState.rememberPageState(sflEl);
-                                const withGridCol = SubfileController.selectAllWithGridColumns(sflEl);
+                            if (recordsContainer) {
+                                sflCtrlStore.initialPageState = SubfileState.rememberPageState(recordsContainer);
+                                const withGridCol = SubfileController.selectAllWithGridColumns(recordsContainer);
                                 const sflColRange = SubfileController.calcSflMinMaxColRange(withGridCol);
 
-                                SubfileController.addMouseCueEvents(sflEl, initData.inputBehaviour);
-                                SubfileController.removeRowGap(sflEl);
-                                sflCtrlStore.fldDrop.foldLinesPerRecord = SubfileController.querySubfileFoldLinesPerRecord(sflEl);
+                                SubfileController.addMouseCueEvents(recordsContainer, initData.inputBehaviour);
+                                SubfileController.removeRowGap(recordsContainer);
+                                sflCtrlStore.fldDrop.foldLinesPerRecord = SubfileController.querySubfileFoldLinesPerRecord(recordsContainer);
 
                                 if (sflCtrlStore.sflEnd.showSubfileEnd) {
                                     const isAtBottom = sflCtrlStore.sflEnd.isSufileEnd;
                                     const icon = SubfileController.addSubfileEndCue(
-                                        sflEl,
+                                        recordsContainer,
                                         isAtBottom,
                                         isAtBottom ? sflCtrlStore.sflEnd.textOn : sflCtrlStore.sflEnd.textOff,
                                         sflColRange
@@ -88,9 +88,9 @@ class SubfileController {
         return sflIcons;
     }
 
-    static selectAllWithGridColumns(sflEl) {
-        const withGridColList = sflEl.querySelectorAll('[style*="grid-column"]');
-        const withGridAreaList = sflEl.querySelectorAll('[style*="grid-area"]');
+    static selectAllWithGridColumns(recordsContainer) {
+        const withGridColList = recordsContainer.querySelectorAll('[style*="grid-column"]');
+        const withGridAreaList = recordsContainer.querySelectorAll('[style*="grid-area"]');
         let result = [];
 
         withGridColList.forEach(el => result.push(el));
@@ -116,12 +116,12 @@ class SubfileController {
         return maxCol > minCol ? { min: minCol, max: maxCol } : {};
     }
 
-    static selectAllRows(sflEl) {
-        return sflEl.querySelectorAll(`div[class~="${EXPO_CLASS.GRID_ROW}"], div[class~="${EXPO_CLASS.GRID_EMPTY_ROW}"]`);
+    static selectAllRows(recordsContainer) {
+        return recordsContainer.querySelectorAll(`div[class~="${EXPO_CLASS.GRID_ROW}"], div[class~="${EXPO_CLASS.GRID_EMPTY_ROW}"]`);
     }
 
-    static selectTableRows(sflEl) { // Note excludes table headers (th)
-        const nonHeaderTd = sflEl.querySelectorAll('tr td'); // TO-DO: there may be a faster way ...
+    static selectTableRows(recordsContainer) { // Note excludes table headers (th)
+        const nonHeaderTd = recordsContainer.querySelectorAll('tr td');
         if (nonHeaderTd.length == 0) { return nonHeaderTd; }
 
         let result = [];
@@ -187,12 +187,12 @@ class SubfileController {
         return null;
     }
 
-    static addMouseCueEvents(sflEl, inputBehaviour) {
+    static addMouseCueEvents(recordsContainer, inputBehaviour) {
         if (!inputBehaviour || !inputBehaviour.dblClick && !inputBehaviour.clickSetsCurrentRecord ) {
             return false;
         }
 
-        const rows = SubfileController.selectAllRowsIncludeTR(sflEl);
+        const rows = SubfileController.selectAllRowsIncludeTR(recordsContainer);
 
         for (let i = 0, l = rows.length; i < l; i++) {
             const row = rows[i];
@@ -212,7 +212,7 @@ class SubfileController {
 
             const cueCurrentRecord = inputBehaviour.clickSetsCurrentRecord
             row.addEventListener('click', () => {
-                SubfileController.setCurrentSelection(sflEl, row, cueCurrentRecord);
+                SubfileController.setCurrentSelection(recordsContainer, row, cueCurrentRecord);
                 PositionCursor.toFirstInputInSubfileRow(row);
             });
 
@@ -226,32 +226,32 @@ class SubfileController {
         return true;
     }
 
-    static selectAllRowsIncludeTR(sflEl) {
-        const gridRows = SubfileController.selectAllRows(sflEl);
+    static selectAllRowsIncludeTR(recordsContainer) {
+        const gridRows = SubfileController.selectAllRows(recordsContainer);
         let gridTableRows = [];
 
-        if (sflEl.classList.contains(EXPO_CLASS.GRID_ROW_SPAN)) {
-            gridTableRows = SubfileController.selectTableRows(sflEl);
+        if (recordsContainer.classList.contains(EXPO_CLASS.GRID_ROW_SPAN)) {
+            gridTableRows = SubfileController.selectTableRows(recordsContainer);
         }
 
         let rows = [...gridRows, ...gridTableRows];
         return rows;
     }
 
-    static removeRowGap(sflEl) {
-        const gridRows = SubfileController.selectAllRows(sflEl);
+    static removeRowGap(recordsContainer) {
+        const gridRows = SubfileController.selectAllRows(recordsContainer);
         gridRows.forEach((row) => { row.classList.add(EXPO_CLASS.GRID_ROW_NO_GAP); });
     }
 
-    static querySubfileFoldLinesPerRecord(sflEl) {
-        const hiddenElements = sflEl.querySelectorAll(`input[type="hidden"][name="${HIDDEN_NAME_FOLD_LINES_PER_RECORD}"]`);
+    static querySubfileFoldLinesPerRecord(recordsContainer) {
+        const hiddenElements = recordsContainer.querySelectorAll(`input[type="hidden"][name="${HIDDEN_NAME_FOLD_LINES_PER_RECORD}"]`);
         if (!hiddenElements || hiddenElements.length === 0) { return 1; }
         return hiddenElements[0].value; 
     }
 
-    static setCurrentSelection(sflEl, row, cueCurrentRecord) {
+    static setCurrentSelection(recordsContainer, row, cueCurrentRecord) {
         if (cueCurrentRecord) {
-            const rows = SubfileController.selectAllRowsIncludeTR(sflEl);
+            const rows = SubfileController.selectAllRowsIncludeTR(recordsContainer);
 
             for (let i = 0, l = rows.length; i < l; i++) {
                 rows[i].classList.remove(EXPO_SUBFILE_CLASS.CURRENT_RECORD);
@@ -266,7 +266,7 @@ class SubfileController {
         // Subfile.setMousePos(row, lastMousePos); TO-DO
     }
 
-    static addSubfileEndCue(sflEl, isAtBottom, tooltipText, sflColRange) {
+    static addSubfileEndCue(recordsContainer, isAtBottom, tooltipText, sflColRange) {
         let iconName = isAtBottom ? ICON_NAME_NO_MORE : ICON_NAME_MORE;
 
         const iconRow = document.createElement('div');
@@ -281,7 +281,7 @@ class SubfileController {
 
         span.style.gridRow = '1';
         iconRow.appendChild(span);
-        sflEl.appendChild(iconRow);
+        recordsContainer.appendChild(iconRow);
 
         if (!isAtBottom) {
             span.addEventListener('click', () => { window.asnaExpo.page.pushKey("PgDn") });
@@ -376,10 +376,10 @@ class Subfile {
         return state;
     }
 
-    static restoreEdit(sflEl, inputName, inputState) {
+    static restoreEdit(recordsContainer, inputName, inputState) {
         if (!(inputState instanceof InputState)) { return; }
 
-        const input = Subfile.findFieldInDOM(sflEl, inputName);
+        const input = Subfile.findFieldInDOM(recordsContainer, inputName);
 
         if (input) {
             if (typeof input.type !== 'undefined' && input.type === 'checkbox') {
@@ -395,9 +395,9 @@ class Subfile {
         return name.replace(/["\\]/g, '\\$&');
     }
 
-    static findFieldInDOM(sflEl, fieldname) {
+    static findFieldInDOM(recordsContainer, fieldname) {
         const fieldnameEscaped = Subfile.escapeName(fieldname);
-        const input = sflEl.querySelector(`input[name="${fieldnameEscaped}"]`);
+        const input = recordsContainer.querySelector(`input[name="${fieldnameEscaped}"]`);
         return input;
     }
 
@@ -434,12 +434,12 @@ class Subfile {
         return newInput;
     }
 
-    static findHiddenRrn(sflEl, sflInputFieldName) {
+    static findHiddenRrn(recordsContainer, sflInputFieldName) {
         const fldNamespace = Subfile.getFieldNamespace(sflInputFieldName);
         if (!fldNamespace) {
             return -1;
         }
-        return PositionCursor.findInput(sflEl, `${fldNamespace}._RecordNumber`, true);
+        return PositionCursor.findInput(recordsContainer, `${fldNamespace}._RecordNumber`, true);
     }
 
     static getFieldNamespace(fieldName) {
