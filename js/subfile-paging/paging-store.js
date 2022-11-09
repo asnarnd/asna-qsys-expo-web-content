@@ -126,26 +126,27 @@ class SubfileState {
         return mergedEdits;
     }
 
-    static rememberPageState(sflEl) {
-        if (!sflEl) { return []; }
-        const gridRows = sflEl.querySelectorAll(`div[class~="${CLASS_GRID_ROW}"]`);
-        if (gridRows.length === 0) { return []; }
+    static rememberPageState(recordsContainer) {
+        if (!recordsContainer) { return []; }
+        const rows = recordsContainer.tagName === 'TBODY' ? recordsContainer.querySelectorAll('tr') : recordsContainer.querySelectorAll(`div[class~="${CLASS_GRID_ROW}"]`);
+        if (rows.length === 0) { return []; }
 
         const sflState = [];
-        for (let row = 0, l = gridRows.length; row < l; row++) {
-            const divRow = gridRows[row];
+        for (let i = 0, l = rows.length; i < l; i++) {
+            const row = rows[i];
             const rowState = { hiddenState: [], state: [] };
-            if (divRow.parentElement) {
-                const hiddenList = divRow.parentElement.querySelectorAll('input[type="hidden"]');
+            const rowContainer = recordsContainer.tagName === 'TBODY' ? row : row.parentElement;
+            if (rowContainer) {
+                const hiddenList = rowContainer.querySelectorAll('input[type="hidden"]');
                 for (let h = 0, lh = hiddenList.length; h < lh; h++) {
                     Subfile.addInputState(rowState.hiddenState, hiddenList[h]);
                 }
             }
 
-            const notHiddenInput = divRow.querySelectorAll('input:not([type="hidden"])');
+            const notHiddenInput = row.querySelectorAll('input:not([type="hidden"])');
 
-            for (let i = 0, li = notHiddenInput.length; i < li; i++) {
-                Subfile.addInputState(rowState.state, notHiddenInput[i]);
+            for (let j = 0, li = notHiddenInput.length; j < li; j++) {
+                Subfile.addInputState(rowState.state, notHiddenInput[j]);
             }
 
             sflState.push(rowState);
@@ -154,10 +155,10 @@ class SubfileState {
         return sflState;
     }
 
-    static RestoreInputChanges(sflEl, edits) {
+    static RestoreInputChanges(recordsContainer, edits) {
         for (let i = 0, l = edits.length; i < l; i++) {
             for (let key in edits[i].state) {
-                Subfile.restoreEdit(sflEl, key, edits[i].state[key]);
+                Subfile.restoreEdit(recordsContainer, key, edits[i].state[key]);
             }
         }
     }
