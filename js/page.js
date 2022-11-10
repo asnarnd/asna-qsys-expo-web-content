@@ -326,7 +326,7 @@ class Page {
         const divRowSpan = recordsContainer;
         if (!recordsContainer || !res.html || !sflCtrlStore) { return; } // Ignore - for now ...
 
-        let tBody = recordsContainer.querySelector('tbody');
+        const tBody = recordsContainer.querySelector('tbody');
         if (tBody) {
             recordsContainer = tBody;
         }
@@ -398,7 +398,7 @@ class Page {
         if (sflCtrlStore.sflEnd.showSubfileEnd) {
             const showAtBottom = sflCtrlStore.sflRecords.isLastPage === "true" ? sflCtrlStore.sflEnd.isSufileEnd : false;
             const icon = SubfileController.addSubfileEndCue(
-                divRowSpan,
+                recordsContainer,
                 showAtBottom,
                 showAtBottom ? sflCtrlStore.sflEnd.textOn : sflCtrlStore.sflEnd.textOff,
                 sflColRange

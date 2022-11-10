@@ -50,9 +50,14 @@ class SubfileController {
                         const initData = JSON.parse(encInitData);
                         const sflCtrlStore = SubfilePagingStore.register(initData);
                         if (!SubfileController.hasNestedSflController(sflcDiv)) {
-                            const recordsContainer = DdsGrid.findRowSpanDiv(initData.name, sflcDiv);
+                            let recordsContainer = DdsGrid.findRowSpanDiv(initData.name, sflcDiv);
 
                             if (recordsContainer) {
+                                const tBody = recordsContainer.querySelector('tbody');
+                                if (tBody) {
+                                    recordsContainer = tBody;
+                                }
+
                                 sflCtrlStore.initialPageState = SubfileState.rememberPageState(recordsContainer);
                                 const withGridCol = SubfileController.selectAllWithGridColumns(recordsContainer);
                                 const sflColRange = SubfileController.calcSflMinMaxColRange(withGridCol);
@@ -267,21 +272,42 @@ class SubfileController {
     }
 
     static addSubfileEndCue(recordsContainer, isAtBottom, tooltipText, sflColRange) {
-        let iconName = isAtBottom ? ICON_NAME_NO_MORE : ICON_NAME_MORE;
+        const iconName = isAtBottom ? ICON_NAME_NO_MORE : ICON_NAME_MORE;
 
-        const iconRow = document.createElement('div');
-        iconRow.className = `${EXPO_CLASS.GRID_ROW} ${EXPO_CLASS.GRID_ROW_NO_GAP}`;
         const span = document.createElement('span');
         span.className = 'dds-cells-suitable-for-icons';
-        span.classList.add(isAtBottom ? 'sflend-bottom':'sflend-more');
+        span.classList.add(isAtBottom ? 'sflend-bottom' : 'sflend-more');
 
-        if (sflColRange.max && sflColRange.min && sflColRange.max > sflColRange.min) {
-            span.style.gridArea = `1 / ${(sflColRange.max - sflColRange.min)-1} / auto`;
+        if (recordsContainer.tagName === 'TBODY') {
+            const rows = recordsContainer.querySelectorAll('tr');
+            const iconRow = document.createElement('tr');
+            const iconTD = document.createElement('td');
+            iconTD.classList.add('sflend-icon-table-data');
+            iconTD.appendChild(span);
+            if (rows && rows.length > 0) {
+                const lastRow = rows[rows.length - 1];
+                const tds = lastRow.querySelectorAll('td');
+                if (tds && tds.length > 0) {
+                    for (let i = 0, l = tds.length; i + 1 < l; i++) {
+                        iconRow.appendChild(document.createElement('td'));
+                    }
+                }
+            }
+            iconRow.appendChild(iconTD);
+            recordsContainer.appendChild(iconRow);
         }
+        else {
+            if (sflColRange.max && sflColRange.min && sflColRange.max > sflColRange.min) {
+                span.style.gridArea = `1 / ${(sflColRange.max - sflColRange.min) - 1} / auto`;
+            }
 
-        span.style.gridRow = '1';
-        iconRow.appendChild(span);
-        recordsContainer.appendChild(iconRow);
+            const iconRow = document.createElement('div');
+            iconRow.className = `${EXPO_CLASS.GRID_ROW} ${EXPO_CLASS.GRID_ROW_NO_GAP}`;
+
+            span.style.gridRow = '1';
+            iconRow.appendChild(span);
+            recordsContainer.appendChild(iconRow);
+        }
 
         if (!isAtBottom) {
             span.addEventListener('click', () => { window.asnaExpo.page.pushKey("PgDn") });

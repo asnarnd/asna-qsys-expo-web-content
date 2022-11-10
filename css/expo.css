@@ -400,6 +400,10 @@ body {
     fill: darkorange;
 }
 
+.sflend-icon-table-data {
+    text-align: right;
+}
+
 /*-------------------------------------------*\
     DdsTable
 
