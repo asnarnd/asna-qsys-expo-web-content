@@ -401,7 +401,7 @@ body {
 }
 
 .sflend-icon-table-data {
-    text-align: right;
+    text-align: right !important;
 }
 
 /*-------------------------------------------*\
