@@ -285,13 +285,7 @@ class SubfileController {
             iconTD.classList.add('sflend-icon-table-data');
             iconTD.appendChild(span);
             if (rows && rows.length > 0) {
-                const lastRow = rows[rows.length - 1];
-                const tds = lastRow.querySelectorAll('td');
-                if (tds && tds.length > 0) {
-                    for (let i = 0, l = tds.length; i + 1 < l; i++) {
-                        iconRow.appendChild(document.createElement('td'));
-                    }
-                }
+                iconTD.setAttribute('colspan', rows.length);
             }
             iconRow.appendChild(iconTD);
             recordsContainer.appendChild(iconRow);
