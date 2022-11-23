@@ -19,6 +19,7 @@ class SubfilePaging {
     static requestPage(aidKey, store, ajaxRespEventHandler) {
         let reqFrom = store.current.topRrn;
         let wantDropped = !store.fldDrop.isFolded;
+        let wantPageSize = store.sflRecords.pageSize;
 
         switch (aidKey) {
             case 'PgDn':
@@ -39,14 +40,13 @@ class SubfilePaging {
                     const foldRowsPerRecord = parseInt(store.fldDrop.foldLinesPerRecord, 10);
                     if (foldRowsPerRecord === NaN || foldRowsPerRecord <= 0) { return; }
                     wantDropped = store.fldDrop.isFolded ? true : false; // Request opposite
-                    store.sflRecords.pageSize = wantDropped ?
-                        store.sflRecords.pageSize * foldRowsPerRecord :
-                        store.sflRecords.pageSize / foldRowsPerRecord;
+                    if (wantDropped)
+                        wantPageSize = store.sflRecords.pageSize * foldRowsPerRecord;
                 }
                 break;
         }
 
-        const reqTo = reqFrom + (store.sflRecords.pageSize - 1);
+        const reqTo = reqFrom + (wantPageSize - 1);
 
         const data = { 
             action: 'getRecords',
