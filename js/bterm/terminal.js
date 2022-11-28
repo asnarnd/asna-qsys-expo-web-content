@@ -2811,21 +2811,7 @@ class Terminal {
         }
     }
 
-    handleAjaxResponseEvent(jsonStr) {
-        let stream;
-        try {
-            stream = JSON.parse(jsonStr);
-        }
-        catch (err) {
-            console.error('ASNA BTerm - Error parsing AJAX response');
-            return;
-        }
-
-        if (!stream.ok) {
-            this.submitAction(stream.requestorAidKey, true);
-            return;
-        }
-
+    handleAjaxResponseEvent(stream) {
         if (stream.redirectUrl) {
             this.submit.activeFKey = 'Redirecting';
             window.location = stream.redirectUrl;

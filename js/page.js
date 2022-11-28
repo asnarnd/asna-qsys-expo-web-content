@@ -289,21 +289,7 @@ class Page {
         DdsWindow.setVarBackgroundPosition();
     }
 
-    handleAjaxGetRecordsResponseEvent(jsonStr) {
-
-        let res;
-        try {
-            res = JSON.parse(jsonStr);
-        }
-        catch (err) {
-            console.error('Error parsing AJAX response');
-            return;
-        }
-
-        if (!res.ok) {
-            this.pushKey(res.request.requestorAidKey);
-            return;
-        }
+    handleAjaxGetRecordsResponseEvent(res) {
 
         // console.log(`AJAX response. ${res.request.recordName} Requested from:${res.request.from} to:${res.request.to} Got ${res.recordCount}`);
 
@@ -617,21 +603,7 @@ class Page {
         }
     }
 
-    handleAjaxGetIconsResponseEvent(jsonStr) {
-
-        let res;
-        try {
-            res = JSON.parse(jsonStr);
-        }
-        catch (err) {
-            console.error('Error parsing AJAX response');
-            return;
-        }
-
-        if (!res.ok) {
-            return;
-        }
-
+    handleAjaxGetIconsResponseEvent(res) {
         if (!this.iconCache) {
             this.iconCache = new IconCache(res.shape);
         }
