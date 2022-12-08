@@ -9,8 +9,8 @@ export { Fetch };
 
 const JOB_HANDLE_KEY = 'JobHandle';
 const HIDDEN_FIELD_NAME = {
-    JOB_HANDLE = '__ASNA_JobHandle__',
-    ASP_NET_ANTI_FORGERY_TOKEN = '__RequestVerificationToken'
+    JOB_HANDLE : '__ASNA_JobHandle__',
+    ASP_NET_ANTI_FORGERY_TOKEN : '__RequestVerificationToken'
 };
 
 class Fetch {
