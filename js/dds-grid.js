@@ -52,7 +52,7 @@ class DdsGrid {
                 let rowVal = parseInt(range[0], 10);
                 let emptyRowsBefore = rowVal - 1 - lastRowVal;
 
-                if (emptyRowsBefore > 0) {
+                if (emptyRowsBefore > 0 && this.isValidRowNumber(row, rowVal)) {
                     this.insertEmptyRows(emptyRowsBefore, row, lastRowVal + 1);
                 }
 
@@ -175,6 +175,37 @@ class DdsGrid {
             parent.removeChild(record);
             popupRecordContainer.appendChild(record);
         }
+    }
+
+    isValidRowNumber(row, rowNumber) {
+        let rangeConstraint = null;
+        let parent = row.parentElement;
+        while (parent) {
+            if (parent.getAttribute(AsnaDataAttrName.RECORD)) {
+                break;
+            }
+
+            const parentRangeVal = parent.getAttribute(AsnaDataAttrName.ROW);
+            if (parentRangeVal) {
+                const parentRange = parentRangeVal.split('-');
+                if (parentRange.length == 2) {
+                    rangeConstraint = parentRange;
+                    break;
+                }
+            }
+            parent = parent.parentElement;
+        }
+        if (!rangeConstraint) {
+            return true; // row not nested, assume valid.
+        }
+        const fromRow = parseInt(rangeConstraint[0], 10);
+        const toRow = parseInt(rangeConstraint[1], 10);
+
+        if (toRow <= fromRow) {
+            return true; // Unexpected range, assume valid.
+        }
+
+        return rowNumber >= fromRow && rowNumber <= toRow;
     }
 
     insertEmptyRows(count, beforeEl, offset) {
