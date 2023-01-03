@@ -235,7 +235,7 @@ class SubfileController {
         const gridRows = SubfileController.selectAllRows(recordsContainer);
         let gridTableRows = [];
 
-        if (recordsContainer.classList.contains(EXPO_CLASS.GRID_ROW_SPAN)) {
+        if (recordsContainer.classList.contains(EXPO_CLASS.GRID_ROW_SPAN) || recordsContainer.tagName === 'TBODY') {
             gridTableRows = SubfileController.selectTableRows(recordsContainer);
         }
 
