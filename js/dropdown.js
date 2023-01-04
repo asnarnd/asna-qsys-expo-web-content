@@ -102,17 +102,19 @@ class DropDown {
         DropDown.copyNonValuesAttributes(select, input);
 
         for (let i = 0, l = optionsValues.length; i < l; i++) {
-            const option = document.createElement('option');
             const optValue = optionsValues[i];
             const optText = optionTexts[i];
-            option.value = optValue;
-            if (DropDown.allZeroes(optValue) && optText === '0') {
-                option.innerText = ' ';
-            }
-            else
-                option.innerText = optText;
+            if (optText.length > 0) { // Skip when empty.
+                const option = document.createElement('option');
+                option.value = optValue;
+                if (DropDown.allZeroes(optValue) && optText === '0') {
+                    option.innerText = ' ';
+                }
+                else
+                    option.innerText = optText;
 
-            select.appendChild(option);
+                select.appendChild(option);
+            }
         }
 
         const value = input.value ? input.value : null;
