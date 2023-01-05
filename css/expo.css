@@ -28,6 +28,7 @@
     --dds-grid-row-padding-bottom: 0.2em;
     --main-window-background: url();
     --main-window-background-position: left top;
+    --main-window-background-size: auto;
 }
 
 /*-------------------------------------------*\
@@ -120,7 +121,7 @@
 .display-element-initialized {
     background-image: var(--main-window-background);
     background-repeat: no-repeat;
-    background-size: auto, auto;
+    background-size: var(--main-window-background-size);
     background-attachment: fixed;
     background-position: var(--main-window-background-position);
 }
