@@ -643,6 +643,8 @@ class Page {
             document.body.removeChild(img);
             main.style.width  = `${width}px`;
             main.style.height = `${height}px`;
+
+            DdsWindow.setVarBackgroundSize(main, width / window.devicePixelRatio); // Assume window.devicePixelRatio is never zero.
         };
     }
 }

@@ -56,6 +56,7 @@ class Calendar {
 
         const wrapper = document.createElement('span');
         wrapper.style.gridColumn = inputOldStyle.gridColumn;
+        wrapper.style.gridRow = '1';
         this.wrap(input, wrapper);
 
         const button = CalendarUI.createIconButton();

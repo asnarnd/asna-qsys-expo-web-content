@@ -29,6 +29,7 @@ const FLAG = {
 const NEXT_BACKGROUND_IMAGE_NAME = '*NEXT';
 const MAIN_SELECTOR = 'main[role=main]';
 const VAR_WIN_BKGND_POSITION = '--main-window-background-position';
+const VAR_WIN_BKGND_SIZE = '--main-window-background-size';
 
 class DdsWindow {
     constructor() {
@@ -377,6 +378,15 @@ class DdsWindow {
             const cssVarRoot = document.documentElement.style;
             if (cssVarRoot && mainRect) {
                 cssVarRoot.setProperty(VAR_WIN_BKGND_POSITION, `${mainRect.left}px ${mainRect.top}px`);
+            }
+        }
+    }
+
+    setVarBackgroundSize(main,size) {
+        if (main) {
+            const cssVarRoot = document.documentElement.style;
+            if (cssVarRoot) {
+                cssVarRoot.setProperty(VAR_WIN_BKGND_SIZE, `${size}px`);
             }
         }
     }
