@@ -216,9 +216,11 @@ class SubfileController {
             }
 
             const cueCurrentRecord = inputBehaviour.clickSetsCurrentRecord
-            row.addEventListener('click', () => {
+            row.addEventListener('click', (evt) => {
                 SubfileController.setCurrentSelection(recordsContainer, row, cueCurrentRecord);
-                PositionCursor.toFirstInputInSubfileRow(row);
+                if (evt.target === row || (evt.target.tagName !== 'INPUT' && evt.target.tagName !== 'SELECT' && evt.target.tagName !== 'TEXTAREA')) {
+                    PositionCursor.toFirstInputInSubfileRow(row);
+                }
             });
 
             if (inputBehaviour.dblClick.aidKey || inputBehaviour.dblClick.targetField) {
