@@ -98,6 +98,11 @@ class DropDown {
     }
 
     replaceInputWithSelect(input, optionsValues, optionTexts) {
+        if (optionsValues.length !== optionTexts.length) {
+            window.alert(`${input.name} field define ${optionsValues.length} Values and ${optionTexts.length} ValuesText. Collection size must match!`);
+            return;
+        }
+
         const select = document.createElement('select');
         DropDown.copyNonValuesAttributes(select, input);
 
