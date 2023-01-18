@@ -12,14 +12,11 @@ import { DdsGrid } from '../js/dds-grid.js';
 
 class PositionCursor {
 
-    static toRowCol(form, rowCol) {
-        if (!rowCol || rowCol.indexOf(',') < 0) { return; }
-        const parts = rowCol.split(',');
-        if (parts.length !== 2) { return; }
-        const row = parseInt(parts[0], 10);
-        const col = parseInt(parts[1], 10);
+    static toRowCol(form, rc) {
+        const rowCol = PositionCursor.parseRowCol(rc);
+        if (!(rowCol.row && rowCol.col) ){ return; }
 
-        const rowEl = PositionCursor.findRow(form,row);
+        const rowEl = PositionCursor.findRow(form, rowCol.row);
         if (!rowEl) { return; }
 
         const inRow = PositionCursor.gridElements(rowEl);
@@ -32,10 +29,15 @@ class PositionCursor {
             if (!firstInput) {
                 firstInput = candidate;
             }
+            const virtRowColAttrVal = candidate.getAttribute(AsnaDataAttrName.ROWCOL);
+            if (virtRowColAttrVal) {
+                const virtRowCol = PositionCursor.parseRowCol(virtRowColAttrVal);
+                if ((virtRowCol.row && virtRowCol.col) && virtRowCol.row != rowCol.row ) { continue; }
+            }
             const start = parseInt(candidate.style.gridColumnStart, 10); // Note: CSS Grid start, end are "one" based.
             const end = parseInt(candidate.style.gridColumnEnd, 10);
-            if (col >= start && col <= end) {
-                const offset = col-start;
+            if (rowCol.col >= start && rowCol.col <= end) {
+                const offset = rowCol.col-start;
                 candidate.focus(); // Note: Page.handleOnFocusEvent will selectText (by default)
                 if (offset > 0) {
                     setTimeout( () => PositionCursor.selectText(candidate, offset, offset), 1);
@@ -282,6 +284,20 @@ class PositionCursor {
         else if (input.setSelectionRange) { // Chrome, Firefox
             input.setSelectionRange(fromPos,toPos);
         }
+    }
+
+    static parseRowCol(rowCol) {
+        let result = {};
+
+        if (!rowCol || rowCol.indexOf(',') < 0) { return result; }
+
+        const parts = rowCol.split(',');
+        if (parts.length !== 2) { return result; }
+
+        result.row = parseInt(parts[0], 10);
+        result.col = parseInt(parts[1], 10);
+
+        return result;
     }
 }
 
