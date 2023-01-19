@@ -8,6 +8,7 @@
 export { theDdsGrid as DdsGrid };
 
 import { AsnaDataAttrName } from '../js/asna-data-attr.js';
+import { SubfilePagingStore } from './subfile-paging/paging-store.js';
 
 const DDS_FILE_LINES = 27;
 const MAIN_SELECTOR = 'main[role=main]';
@@ -32,7 +33,17 @@ class DdsGrid {
 
         for (let r = 0; r < records.length; r++) {
             const record = records[r];
-            if (activeWindowRecord && !record.getAttribute(AsnaDataAttrName.WINDOW)) {
+            const recName = record.getAttribute(AsnaDataAttrName.RECORD);
+            let isSubfile = false;
+            let isFolded = false;
+            if (recName) {
+                const subfileControlData = SubfilePagingStore.getSflCtlStore(recName);
+                if (subfileControlData) {
+                    isSubfile = true;
+                    isFolded = subfileControlData.fldDrop.isFolded;
+                }
+            }
+            if (activeWindowRecord && !record.getAttribute(AsnaDataAttrName.WINDOW) ) {
                 continue;
             }
 
@@ -40,6 +51,18 @@ class DdsGrid {
 
             if (!ddsRows) {
                 continue;
+            }
+
+            if (isSubfile && !isFolded) { /* When Subfile is dropping fields, don't try to fill row gaps. */
+                if (ddsRows.length > 0) {
+                    let row = ddsRows[0];
+                    const rangeVal = row.getAttribute(AsnaDataAttrName.ROW);
+                    const range = rangeVal.split('-');
+                    lastRowVal = range.length === 2 ? range[1] : range[0];
+                    lastRowVal = parseInt(lastRowVal, 10);
+                    lastRow = row;
+                    continue;
+                }
             }
 
             for (let i = 0, l = ddsRows.length; i < l; i++) {
