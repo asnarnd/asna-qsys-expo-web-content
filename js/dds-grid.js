@@ -55,23 +55,22 @@ class DdsGrid {
 
             if (isSubfile && !isFolded) { /* When Subfile is dropping fields, don't try to fill row gaps. */
                 if (ddsRows.length > 0) {
-                    let row = ddsRows[0];
-                    const rangeVal = row.getAttribute(AsnaDataAttrName.ROW);
-                    const range = rangeVal.split('-');
-                    lastRowVal = range.length === 2 ? range[1] : range[0];
-                    lastRowVal = parseInt(lastRowVal, 10);
-                    lastRow = row;
-                    continue;
+                    const row = ddsRows[0];
+                    const range = this.getRowRange(row);
+                    if (range && range.length === 2) {
+                        lastRowVal = parseInt(range[1], 10);
+                        lastRow = row;
+                        continue;
+                    }
                 }
             }
 
             for (let i = 0, l = ddsRows.length; i < l; i++) {
-                let row = ddsRows[i];
-                const rangeVal = row.getAttribute(AsnaDataAttrName.ROW);
-                if (!rangeVal) {
+                const row = ddsRows[i];
+                const range = this.getRowRange(row);
+                if (!range) {
                     continue;
                 }
-                const range = rangeVal.split('-');
                 let rowVal = parseInt(range[0], 10);
                 let emptyRowsBefore = rowVal - 1 - lastRowVal;
 
@@ -101,6 +100,15 @@ class DdsGrid {
         //    Note: For Page with active WINDOW, this is done later in page - setMainSizeToImageSize()
 
         rowSpanCollection.forEach((rowSpan) => this.completeRowSpanGridRows(rowSpan));
+    }
+
+    getRowRange(row) {
+        const rangeVal = row.getAttribute(AsnaDataAttrName.ROW);
+        if (!rangeVal) {
+            return null;
+        }
+        const range = rangeVal.split('-');
+        return range;
     }
 
     completeRowSpanGridRows(rowSpan) {
