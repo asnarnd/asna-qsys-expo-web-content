@@ -76,7 +76,8 @@ class Page {
         }
 
         DdsWindow.init(thisForm);
-
+        const main = thisForm.querySelector(MAIN_SELECTOR);
+        const sflEndIcons = SubfileController.init(main, DdsWindow.activeWindowRecord !== null);
         DdsGrid.completeGridRows(thisForm, DdsWindow.activeWindowRecord);
         this.stretchConstantsText();
         this.addOnClickPushKeyEventListener();
@@ -91,7 +92,6 @@ class Page {
 
         WaitForResponseAnimation.init(thisForm);
         const twoPanelContainer = NavigationMenu.init();
-        const main = thisForm.querySelector(MAIN_SELECTOR);
 
         this.setAsInitialized(main);
         if (twoPanelContainer) {
@@ -134,7 +134,6 @@ class Page {
         else {
             PositionCursor.toDefaultField(thisForm);
         }
-        const sflEndIcons = SubfileController.init(main,DdsWindow.activeWindowRecord!==null);
         this.initIcons(sflEndIcons);
 
         Page.promptResettableErrorMessage(thisForm);

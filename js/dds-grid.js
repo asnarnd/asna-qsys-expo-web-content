@@ -8,6 +8,7 @@
 export { theDdsGrid as DdsGrid };
 
 import { AsnaDataAttrName } from '../js/asna-data-attr.js';
+import { SubfilePagingStore } from './subfile-paging/paging-store.js';
 
 const DDS_FILE_LINES = 27;
 const MAIN_SELECTOR = 'main[role=main]';
@@ -32,7 +33,17 @@ class DdsGrid {
 
         for (let r = 0; r < records.length; r++) {
             const record = records[r];
-            if (activeWindowRecord && !record.getAttribute(AsnaDataAttrName.WINDOW)) {
+            const recName = record.getAttribute(AsnaDataAttrName.RECORD);
+            let isSubfile = false;
+            let isFolded = false;
+            if (recName) {
+                const subfileControlData = SubfilePagingStore.getSflCtlStore(recName);
+                if (subfileControlData) {
+                    isSubfile = true;
+                    isFolded = subfileControlData.fldDrop.isFolded;
+                }
+            }
+            if (activeWindowRecord && !record.getAttribute(AsnaDataAttrName.WINDOW) ) {
                 continue;
             }
 
@@ -42,13 +53,24 @@ class DdsGrid {
                 continue;
             }
 
+            if (isSubfile && !isFolded) { /* When Subfile is dropping fields, don't try to fill row gaps. */
+                if (ddsRows.length > 0) {
+                    const row = ddsRows[0];
+                    const range = this.getRowRange(row);
+                    if (range && range.length === 2) {
+                        lastRowVal = parseInt(range[1], 10);
+                        lastRow = row;
+                        continue;
+                    }
+                }
+            }
+
             for (let i = 0, l = ddsRows.length; i < l; i++) {
-                let row = ddsRows[i];
-                const rangeVal = row.getAttribute(AsnaDataAttrName.ROW);
-                if (!rangeVal) {
+                const row = ddsRows[i];
+                const range = this.getRowRange(row);
+                if (!range) {
                     continue;
                 }
-                const range = rangeVal.split('-');
                 let rowVal = parseInt(range[0], 10);
                 let emptyRowsBefore = rowVal - 1 - lastRowVal;
 
@@ -78,6 +100,15 @@ class DdsGrid {
         //    Note: For Page with active WINDOW, this is done later in page - setMainSizeToImageSize()
 
         rowSpanCollection.forEach((rowSpan) => this.completeRowSpanGridRows(rowSpan));
+    }
+
+    getRowRange(row) {
+        const rangeVal = row.getAttribute(AsnaDataAttrName.ROW);
+        if (!rangeVal) {
+            return null;
+        }
+        const range = rangeVal.split('-');
+        return range;
     }
 
     completeRowSpanGridRows(rowSpan) {
