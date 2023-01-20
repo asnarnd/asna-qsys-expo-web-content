@@ -60,10 +60,24 @@ class Kbd {
 
     convertKeyNameToKeyDetail(candidateKeyName) {
         let keyCode = '';
+        let shiftKey =  false;
         switch (candidateKeyName) {
             case 'Enter': keyCode = KEY_CODE_ENTER; break;
             case 'PgUp': keyCode = KEY_CODE_PAGE_UP; break;
             case 'PgDn': keyCode = KEY_CODE_PAGE_DOWN; break;
+            case 'F13': keyCode = KEY_CODE_F1; shiftKey = true; break;
+            case 'F14': keyCode = KEY_CODE_F1 + 1; shiftKey = true; break;
+            case 'F15': keyCode = KEY_CODE_F1 + 2; shiftKey = true; break;
+            case 'F16': keyCode = KEY_CODE_F1 + 3; shiftKey = true; break;
+            case 'F17': keyCode = KEY_CODE_F1 + 4; shiftKey = true; break;
+            case 'F18': keyCode = KEY_CODE_F1 + 5; shiftKey = true; break;
+            case 'F19': keyCode = KEY_CODE_F1 + 6; shiftKey = true; break;
+            case 'F20': keyCode = KEY_CODE_F1 + 7; shiftKey = true; break;
+            case 'F21': keyCode = KEY_CODE_F1 + 8; shiftKey = true; break;
+            case 'F22': keyCode = KEY_CODE_F1 + 9; shiftKey = true; break;
+            case 'F23': keyCode = KEY_CODE_F1 + 10; shiftKey = true; break;
+            case 'F24': keyCode = KEY_CODE_F1 + 11; shiftKey = true; break;
+
             default: {
                 const fKeyCand = Kbd.isFuncKey(candidateKeyName);
                 if (fKeyCand) {
@@ -73,7 +87,7 @@ class Kbd {
             }
         }
 
-        return { keyCode: keyCode };
+        return { keyCode: keyCode, shiftKey: shiftKey };
     }
 
     processKeyDetail(keyDetail, aidKeyBitmap) {
@@ -163,7 +177,6 @@ class Kbd {
             return { keyCode: event.which, srcElement: event.target, ctrlKey: event.ctrlKey, altKey: event.altKey, shiftKey: event.shiftKey };
         }
     }
-
 
     static isFKey(keyDetail) {
         return keyDetail.keyCode >= KEY_CODE_F1 && keyDetail.keyCode <= KEY_CODE_F12;

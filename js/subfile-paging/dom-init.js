@@ -13,7 +13,6 @@ import { DdsGrid } from '../dds-grid.js';
 import { Base64 } from '../base-64.js';
 import { AsnaDataAttrName } from '../asna-data-attr.js';
 import { FeedbackArea } from '../feedback-area.js';
-import { DdsWindow } from '../dds-window.js';
 
 const HIDDEN_NAME_FOLD_LINES_PER_RECORD = 'fold-lines-per-record';
 
