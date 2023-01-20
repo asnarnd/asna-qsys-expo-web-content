@@ -24,6 +24,7 @@ class SubfilePaging {
         switch (aidKey) {
             case 'PgDn':
                 reqFrom += store.sflRecords.pageSize;
+                wantPageSize = SubfilePaging.calcPageSizeIfDropped(store, wantPageSize);
                 break;
 
             case 'PgUp':
@@ -32,6 +33,7 @@ class SubfilePaging {
                     Kbd.showInvalidRollAlert();
                     return;
                 }
+                wantPageSize = SubfilePaging.calcPageSizeIfDropped(store, wantPageSize);
                 break;
 
             default:
@@ -71,6 +73,16 @@ class SubfilePaging {
                 console.error(`Fetch failed error:${err}`);
             }
         );
+    }
+
+    static calcPageSizeIfDropped(store, pageSize) {
+        if (store.fldDrop.foldLinesPerRecord && !(store.fldDrop.isFolded)) {
+            const foldRowsPerRecord = parseInt(store.fldDrop.foldLinesPerRecord, 10);
+            if (!(foldRowsPerRecord === NaN || foldRowsPerRecord <= 0)) {
+                pageSize = store.sflRecords.pageSize * foldRowsPerRecord;
+            }
+        }
+        return pageSize;
     }
 
     static createDOM_ElementsEdited(sflCtrlFormatName) {
