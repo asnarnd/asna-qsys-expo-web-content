@@ -53,12 +53,22 @@ class DdsGrid {
                 continue;
             }
 
-            if (isSubfile && !isFolded) { /* When Subfile is dropping fields, don't try to fill row gaps. */
+            if (isSubfile && !isFolded) { // When Subfile is dropping fields, don't try to fill row gaps.
                 if (ddsRows.length > 0) {
                     const row = ddsRows[0];
                     const range = this.getRowRange(row);
                     if (range && range.length === 2) {
-                        lastRowVal = parseInt(range[1], 10);
+                        const sflFromRow = parseInt(range[0], 10);
+                        const sflToRow = parseInt(range[1], 10);
+                        if (lastRowVal === 0) { // Subfile is first element.
+                            let emptyRowsBefore = sflFromRow - 1;
+
+                            if (emptyRowsBefore > 0) {
+                                this.insertEmptyRows(emptyRowsBefore, row, 1);
+                            }
+                        }
+
+                        lastRowVal = sflToRow;
                         lastRow = row;
                         continue;
                     }
