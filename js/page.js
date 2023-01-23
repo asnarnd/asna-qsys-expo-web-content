@@ -126,6 +126,7 @@ class Page {
         Page.setupAutoPostback(thisForm, this.aidKeyBitmap);
         Page.setupLeftPad(thisForm);
         Validate.setupMandatory(thisForm);
+        FeedbackArea.updateSflLowestRRN(thisForm, SubfilePagingStore.minRRN());
 
         if (thisForm.__CursorLocation__ && thisForm.__CursorLocation__.value) {
             PositionCursor.removeFieldAttribute();
@@ -399,21 +400,16 @@ class Page {
 
         sflCtrlStore.initialPageState = SubfileState.rememberPageState(recordsContainer); // Initial State of new page.
 
+        const topRrn = sflCtrlStore.current.topRrn;
         if (needToRestoreCursor) {
             let newFldWithCursorName = '';
             if (cursorPosRrnOffset >= 0 && lastSflFldWithCursorName) {
-                newFldWithCursorName = Subfile.makeFieldName(lastSflFldWithCursorName, sflCtrlStore.current.topRrn + cursorPosRrnOffset);
+                newFldWithCursorName = Subfile.makeFieldName(lastSflFldWithCursorName, topRrn + cursorPosRrnOffset);
             }
             PositionCursor.restoreFocus(recordsContainer, newFldWithCursorName, res.request.requestorAidKey);
         }
-        /*
-        setLowestRRN(jsonSflCtrl.topRrn);
-        sflCursorRow = ASNA.SubfileUI.FindRecordByRRN(el, jsonSflCtrl.topRrn);
 
-        if (sflCursorRow) {
-            ASNA.SubfileUI.SetCurrentRecord(el, sflCursorRow);
-        }
-        */
+        FeedbackArea.updateSflLowestRRN(form, topRrn);
 
         if (typeof (MonarchSubfilePageChanged) === 'function') {   // Notify user-code
             MonarchSubfilePageChanged(res.request.recordName, recordsContainer, res.request.from, res.request.request.to - 1, res.request.mode);
