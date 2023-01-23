@@ -38,6 +38,15 @@ class SubfilePagingStore {
 
         return names;
     }
+
+    minRRN() {
+        const names = this.getSflCtlStoreNames();
+        let min = 0;
+        if (names.length > 0) {
+            names.forEach(name => min = Math.min(min, this.getSflCtlStore(name).current.topRrn));
+        }
+        return min;
+    }
 }
 
 class InputState {

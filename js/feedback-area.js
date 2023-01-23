@@ -17,6 +17,7 @@ const FEEDBACK_HIDDEN_FIELD_NAME = {
 
     // Subfile
     atSflCursorRrn: '__atSflRRN__',
+    sflLowestRrn:   '__SflLowestRRN__',
 
     // Window
     activeWindowTopLeft: '__activeWindowTopLeft__'
@@ -79,6 +80,10 @@ class FeedbackArea {
         }
 
         FeedbackArea.setHiddenFieldValue(form, FEEDBACK_HIDDEN_FIELD_NAME.atCursorLocation, modelName);
+    }
+
+    updateSflLowestRRN(form, lowestRRN) {
+        FeedbackArea.setHiddenFieldValue(form, FEEDBACK_HIDDEN_FIELD_NAME.sflLowestRrn, lowestRRN);
     }
 
     findRecordAncestorName(el) {
