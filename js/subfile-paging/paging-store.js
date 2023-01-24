@@ -41,11 +41,14 @@ class SubfilePagingStore {
 
     minRRN() {
         const names = this.getSflCtlStoreNames();
-        let min = 0;
-        if (names.length > 0) {
-            names.forEach(name => min = Math.min(min, this.getSflCtlStore(name).current.topRrn));
-        }
-        return min;
+        const RRN_INVALID = 9999 + 1;
+        let min = RRN_INVALID;
+
+        names.forEach(name =>
+            min = Math.min(min, this.getSflCtlStore(name).current.topRrn)
+        );
+
+        return min === RRN_INVALID ? 0 : min;
     }
 }
 
