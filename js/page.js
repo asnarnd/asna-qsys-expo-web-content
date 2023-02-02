@@ -359,6 +359,7 @@ class Page {
         // Re-apply style changes marked by 'data-asna-xxx' attributes
         if (!tBody) {
             DdsGrid.completeRowSpanGridRows(recordsContainer);
+            DdsGrid.adjustVirtRowCol(recordsContainer);
         }
         this.stretchConstantsText();
         this.addOnClickPushKeyEventListener();
