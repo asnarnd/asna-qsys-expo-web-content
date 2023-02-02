@@ -7,8 +7,10 @@
 
 export { theDdsGrid as DdsGrid };
 
-import { AsnaDataAttrName } from '../js/asna-data-attr.js';
+import { AsnaDataAttrName } from './asna-data-attr.js';
 import { SubfilePagingStore } from './subfile-paging/paging-store.js';
+import { SubfileController } from './subfile-paging/dom-init.js';
+import { PositionCursor } from './page-position-cursor.js';
 
 const DDS_FILE_LINES = 27;
 const MAIN_SELECTOR = 'main[role=main]';
@@ -109,7 +111,10 @@ class DdsGrid {
         // else
         //    Note: For Page with active WINDOW, this is done later in page - setMainSizeToImageSize()
 
-        rowSpanCollection.forEach((rowSpan) => this.completeRowSpanGridRows(rowSpan));
+        rowSpanCollection.forEach((recordsContainer) => {
+            this.completeRowSpanGridRows(recordsContainer);
+            this.adjustVirtRowCol(recordsContainer);
+        });
     }
 
     getRowRange(row) {
@@ -121,12 +126,9 @@ class DdsGrid {
         return range;
     }
 
-    completeRowSpanGridRows(rowSpan) {
-        const rowRangeAttr = rowSpan.getAttribute(AsnaDataAttrName.ROW);
-        if (!rowRangeAttr) { return; }  // Unexpected
-
-        const rowRange = rowRangeAttr.split('-');
-        if (rowRange.length !== 2) { return; }  // Unexpected
+    completeRowSpanGridRows(recordsContainer) {
+        const rowRange = this.getRowRange(recordsContainer);
+        if (!rowRange || rowRange.length !== 2) { return; }  // Unexpected
 
         const fromRow = parseInt(rowRange[0], 10);
         const toRow = parseInt(rowRange[1], 10);
@@ -135,19 +137,19 @@ class DdsGrid {
 
         const requestedRows = (toRow - fromRow) + 1;
 
-        if (rowSpan.classList.contains(CLASS_GRID_ROW_SPAN)) { // RowSpan Panel
+        if (recordsContainer.classList.contains(CLASS_GRID_ROW_SPAN)) { // RowSpan Panel
             const cssVarRoot = document.documentElement.style;
             const a = 'var(--dds-grid-row-padding-top)';
             const b = 'calc(var(--body-font-size) * 1.1429)';
             const c = 'var(--dds-grid-row-padding-bottom)';
 
-            rowSpan.style.gridTemplateRows = `repeat(${requestedRows}, calc(${a} + ${b} + ${c}))`;
+            recordsContainer.style.gridTemplateRows = `repeat(${requestedRows}, calc(${a} + ${b} + ${c}))`;
 
-            const colSpanOverride = rowSpan.getAttribute(AsnaDataAttrName.GRID_PANEL_SPAN_STYLE_COL_SPAN);
+            const colSpanOverride = recordsContainer.getAttribute(AsnaDataAttrName.GRID_PANEL_SPAN_STYLE_COL_SPAN);
             if (colSpanOverride) {
                 const colCount = parseInt(colSpanOverride);
                 if (colCount > 0) {
-                    rowSpan.style.gridTemplateColumns = `repeat(${colCount}, var(--dds-grid-col-width))`;
+                    recordsContainer.style.gridTemplateColumns = `repeat(${colCount}, var(--dds-grid-col-width))`;
                 }
             }
             else {
@@ -155,15 +157,47 @@ class DdsGrid {
             }
         }
         else {
-            const rows = rowSpan.querySelectorAll(`div[class~=${CLASS_GRID_ROW}]`);
-            const emptyRows = rowSpan.querySelectorAll(`div[class~=${CLASS_GRID_EMPTY_ROW}]`);
+            const rows = recordsContainer.querySelectorAll(`div[class~=${CLASS_GRID_ROW}]`);
+            const emptyRows = recordsContainer.querySelectorAll(`div[class~=${CLASS_GRID_EMPTY_ROW}]`);
 
             const existingRows = rows.length + emptyRows.length;
             const toAddCount = requestedRows - existingRows;
             if (toAddCount > 0) {
-                this.appendEmptyRows(toAddCount, rowSpan, fromRow + existingRows)
+                this.appendEmptyRows(toAddCount, recordsContainer, fromRow + existingRows)
             }
         }
+    }
+
+    adjustVirtRowCol(recordsContainer) {
+        const rowRange = this.getRowRange(recordsContainer);
+        if (!rowRange || rowRange.length !== 2) { return; }
+        const fromRow = parseInt(rowRange[0], 10);
+        const toRow = parseInt(rowRange[1], 10);
+
+        if (fromRow < 0 || toRow < fromRow) { return; }  // Unexpected
+
+        const rows = SubfileController.selectAllRows(recordsContainer);
+        if (!rows || !rows.length) { return; }
+
+        let vRow = fromRow;
+        rows.forEach((row) => {
+            if (vRow <= toRow) {
+                const els = this.selectElementsWithVirtRowCol(row);
+                if (els && els.length) {
+                    els.forEach((el) => {
+                        const rowCol = PositionCursor.parseRowCol(el.getAttribute(AsnaDataAttrName.ROWCOL));
+                        if (rowCol.row && rowCol.col) {
+                            el.setAttribute(AsnaDataAttrName.ROWCOL, `${vRow},${rowCol.col}`);
+                        }
+                    });
+                }
+            }
+            vRow++;
+        });
+    }
+
+    selectElementsWithVirtRowCol(row) {
+        return row.querySelectorAll(`*[${AsnaDataAttrName.ROWCOL}]:not([${AsnaDataAttrName.ROWCOL}="])`);
     }
 
     findAllRecords(form) {
@@ -226,13 +260,10 @@ class DdsGrid {
                 break;
             }
 
-            const parentRangeVal = parent.getAttribute(AsnaDataAttrName.ROW);
-            if (parentRangeVal) {
-                const parentRange = parentRangeVal.split('-');
-                if (parentRange.length == 2) {
-                    rangeConstraint = parentRange;
-                    break;
-                }
+            const parentRange = this.getRowRange(parent);
+            if (parentRange && parentRange.length === 2) {
+                rangeConstraint = parentRange;
+                break;
             }
             parent = parent.parentElement;
         }
@@ -363,13 +394,10 @@ class DdsGrid {
         const slfCtlRows = this.findRows(sflCtl);
 
         for (let row of slfCtlRows) {
-            const rangeVal = row.getAttribute(AsnaDataAttrName.ROW);
-            if (rangeVal) {
-                const range = rangeVal.split('-');
-                if (range.length === 2) {
-                    sfl = row;
-                    break;
-                }
+            const rowRange = this.getRowRange(row);
+            if (rowRange && rowRange.length === 2 ) {
+                sfl = row;
+                break;
             }
         }
 
