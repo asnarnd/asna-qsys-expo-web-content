@@ -10,6 +10,9 @@ export { theDropDown as DropDown };
 import { AsnaDataAttrName } from './asna-data-attr.js';
 import { StringExt } from './string.js';
 
+const DROP_DOWN_STYLE = 'menu';
+// const DROP_DOWN_STYLE = 'list';
+
 class DropDown {
     initBoxes() {
         const elements = document.querySelectorAll(`input[${AsnaDataAttrName.VALUES}]`);
@@ -19,7 +22,13 @@ class DropDown {
 
             const values = input.getAttribute(AsnaDataAttrName.VALUES);
             const valuesText = input.getAttribute(AsnaDataAttrName.VALUES_TEXT);
-            this.replaceInputWithSelect(input, this.parseAttribute(values), this.parseAttribute(valuesText));
+
+            if (DROP_DOWN_STYLE === 'list') {
+                this.replaceInputWithSelect(input, this.parseAttribute(values), this.parseAttribute(valuesText));
+            }
+            else if (DROP_DOWN_STYLE === 'menu') {
+                this.replaceInputWithMenu(input, this.parseAttribute(values), this.parseAttribute(valuesText));
+            }
             // Note: no need to remove AsnaDataAttrName.VALUES, AsnaDataAttrName.VALUES_TEXT, etc. (input was replaced).
         }
     }
@@ -102,7 +111,46 @@ class DropDown {
             window.alert(`${input.name} field define ${optionsValues.length} Values and ${optionTexts.length} ValuesText. Collection size must match!`);
             return;
         }
-        const inputName = input.name;
+
+        const select = document.createElement('select');
+        DropDown.copyNonValuesAttributes(select, input);
+
+        for (let i = 0, l = optionsValues.length; i < l; i++) {
+            const optValue = optionsValues[i];
+            const optText = optionTexts[i];
+            if (optText.length > 0) { // Skip when empty.
+                const option = document.createElement('option');
+                option.value = optValue;
+                if (DropDown.allZeroes(optValue) && optText === '0') {
+                    option.innerText = ' ';
+                }
+                else
+                    option.innerText = optText;
+
+                select.appendChild(option);
+            }
+        }
+
+        const value = input.value ? input.value : null;
+        input.parentNode.replaceChild(select, input); // Note: input will be destroyed during DOM's garbage collection.
+        if (value) {
+            for (let i = 0, l = select.options.length; i < l; i++) {
+                if (DropDown.isSameOptionValue(select.options[i].value, value)) {
+                    select.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+    }
+
+    replaceInputWithMenu(input, optionsValues, optionTexts) {
+        if (optionsValues.length !== optionTexts.length) {
+            window.alert(`${input.name} field define ${optionsValues.length} Values and ${optionTexts.length} ValuesText. Collection size must match!`);
+            return;
+        }
+        const inputName   = input.name;
+        const inputRowCol = input.getAttribute(AsnaDataAttrName.ROWCOL);
+
         const div = document.createElement('div');
         const button = document.createElement('button');
         const nav = document.createElement('nav');
@@ -144,7 +192,7 @@ class DropDown {
                     input.name = inputName;
                     form.appendChild(input);
                     setTimeout(() => {
-                        asnaExpo.page.pushKey('Enter', inputName, optValue);
+                        asnaExpo.page.pushKey('Enter', inputName, optValue, inputRowCol);
                     }, 1);
                 });
                 ul.appendChild(item);

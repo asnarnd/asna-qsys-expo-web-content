@@ -465,7 +465,7 @@ body {
 
 .dds-menu > ul {
     list-style: none;
-    margin: 0.25em 0;
+    margin: 0;
     padding: 0.5em;
 }
 
@@ -500,6 +500,7 @@ body {
     text-align: center;
     border-width: 0px;
     padding: 0 0.25em 0 0.25em;
+    cursor: pointer;
 }
 
 .dds-grid-row button + .dds-menu {
