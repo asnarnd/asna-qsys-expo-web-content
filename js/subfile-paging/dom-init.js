@@ -217,7 +217,8 @@ class SubfileController {
             const cueCurrentRecord = inputBehaviour.clickSetsCurrentRecord
             row.addEventListener('click', (evt) => {
                 SubfileController.setCurrentSelection(recordsContainer, row, cueCurrentRecord);
-                if (evt.target === row || (evt.target.tagName !== 'INPUT' && evt.target.tagName !== 'SELECT' && evt.target.tagName !== 'TEXTAREA')) {
+                const targetTagName = evt.target.tagName;
+                if (evt.target === row || (targetTagName !== 'INPUT' && targetTagName !== 'SELECT' && targetTagName !== 'TEXTAREA' && targetTagName !== 'BUTTON')) {
                     PositionCursor.toFirstInputInSubfileRow(row);
                 }
             });

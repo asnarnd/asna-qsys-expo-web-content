@@ -102,36 +102,69 @@ class DropDown {
             window.alert(`${input.name} field define ${optionsValues.length} Values and ${optionTexts.length} ValuesText. Collection size must match!`);
             return;
         }
+        const inputName = input.name;
+        const div = document.createElement('div');
+        const button = document.createElement('button');
+        const nav = document.createElement('nav');
+        const ul = document.createElement('ul');
+        DropDown.copyNonValuesAttributes(div, input);
+        div.classList.add('dds-menu-anchor');
+        div.removeAttribute('name');
 
-        const select = document.createElement('select');
-        DropDown.copyNonValuesAttributes(select, input);
+        button.type = 'button';
+        button.className = 'dds-menu-anchor';
+        button.innerText = '☰';
+        nav.className = 'dds-menu';
 
+        div.appendChild(button);
+        div.appendChild(nav);
+
+        nav.appendChild(ul);
         for (let i = 0, l = optionsValues.length; i < l; i++) {
             const optValue = optionsValues[i];
             const optText = optionTexts[i];
-            if (optText.length > 0) { // Skip when empty.
-                const option = document.createElement('option');
-                option.value = optValue;
-                if (DropDown.allZeroes(optValue) && optText === '0') {
-                    option.innerText = ' ';
-                }
-                else
-                    option.innerText = optText;
+            if (optText.length > 0 && !(DropDown.allZeroes(optValue) && optText === '0') ) { // Skip when empty.
+                const item = document.createElement('li');
+                const itemButton = document.createElement('button');
+                itemButton.type = 'button';
 
-                select.appendChild(option);
+                item.appendChild(itemButton);
+
+        //        option.value = optValue;
+                //if (DropDown.allZeroes(optValue) && optText === '0') {
+                //    itemButton.innerText = ' ';
+                //}
+                //else
+                    itemButton.innerText = optText;
+
+                itemButton.addEventListener('click', (e) => {
+                    const form = e.target.form;
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.name = inputName;
+                    form.appendChild(input);
+                    setTimeout(() => {
+                        asnaExpo.page.pushKey('Enter', inputName, optValue);
+                    }, 1);
+                });
+                ul.appendChild(item);
             }
         }
 
-        const value = input.value ? input.value : null;
-        input.parentNode.replaceChild(select, input); // Note: input will be destroyed during DOM's garbage collection.
-        if (value) {
-            for (let i = 0, l = select.options.length; i < l; i++) {
-                if ( DropDown.isSameOptionValue(select.options[i].value, value)) {
-                    select.selectedIndex = i;
-                    break;
-                }
-            }
-        }
+        //const value = input.value ? input.value : null;
+
+        const pn = input.parentNode;
+        pn.replaceChild(div, input); // Note: input will be destroyed during DOM's garbage collection.
+        // pn.insertBefore(button, nav);
+
+        //if (value) {
+        //    for (let i = 0, l = nav.options.length; i < l; i++) {
+        //        if ( DropDown.isSameOptionValue(nav.options[i].value, value)) {
+        //            nav.selectedIndex = i;
+        //            break;
+        //        }
+        //    }
+        //}
     }
 
     static copyNonValuesAttributes(target, source) {

@@ -456,6 +456,62 @@ body {
     top: -1px;
 }
 
+.dds-menu {
+    visibility: hidden;
+    background: white;
+    border-radius: 0.5em;
+    border: 1px solid #dedede;
+}
+
+.dds-menu > ul {
+    list-style: none;
+    margin: 0.25em 0;
+    padding: 0.5em;
+}
+
+.dds-menu > ul > li {
+    padding: 0;
+}
+
+.dds-menu > ul > li:hover {
+    background-color: lightgray;
+    font-weight: 600;
+}
+
+.dds-menu > ul > li > button {
+    padding: 0.2rem 0.8rem;
+    width: 100%;
+    font-size: calc( var(--body-font-size) * 0.75 );
+    font-family: var(--body-font-family);
+    -webkit-appearance: button;
+    -moz-appearance: button;
+    text-transform: none;
+    line-height: 1.15;
+    margin: 0;
+    overflow: visible;
+    border: 0;
+    text-align: left;
+    outline: none;
+    cursor: pointer;
+    background: transparent;
+}
+
+.dds-menu-anchor {
+    text-align: center;
+    border-width: 0px;
+    padding: 0 0.25em 0 0.25em;
+}
+
+.dds-grid-row button + .dds-menu {
+    display: inline-block;
+    position: absolute;
+}
+
+button + .dds-menu:active,
+button:focus + .dds-menu {
+    visibility: visible;
+}
+
 /*-------------------------------------------*\
     Synon Escape
 
