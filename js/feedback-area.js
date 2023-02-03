@@ -25,12 +25,14 @@ const FEEDBACK_HIDDEN_FIELD_NAME = {
 
 class FeedbackArea {
 
-    updatePushedKey(aidKey, form) {
-        FeedbackArea.setHiddenFieldValue(form, FEEDBACK_HIDDEN_FIELD_NAME.pushedKey, aidKey);
+    updatePushedKey(form, aidKey) {
+        if (form) {
+            FeedbackArea.setHiddenFieldValue(form, FEEDBACK_HIDDEN_FIELD_NAME.pushedKey, aidKey);
+        }
     }
 
-    updateRowColFeedback(form, virtualRowCol) {
-        if (form) { // Clear the last value ...
+    updateRowColFeedback(form, rowcol) {
+        if (form) { 
             FeedbackArea.setHiddenFieldValue(form, FEEDBACK_HIDDEN_FIELD_NAME.atRowCol, rowcol);
         }
     }
