@@ -444,7 +444,7 @@ class Page {
             FeedbackArea.updateRowColFeedback(form, virtualRowCol);
         }
 
-        FeedbackArea.updatePushedKey(aidKeyToPush, form);
+        FeedbackArea.updatePushedKey(form, aidKeyToPush);
 
         if (!Validate.validateMandatory(form, aidKeyToPush, this.aidKeyBitmap)) {
             return;
