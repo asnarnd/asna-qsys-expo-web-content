@@ -456,6 +456,18 @@ body {
     top: -1px;
 }
 
+.dds-message-panel {
+    overflow: auto;
+    color: red;
+    height: calc(1.2 * var(--body-font-size));
+}
+
+.dds-message-panel ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
 /*-------------------------------------------*\
     Synon Escape
 
