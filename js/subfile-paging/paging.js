@@ -16,7 +16,7 @@ import { Kbd } from '../kbd.js';
 const AJAX_RESPONSE_TIMEOUT = 3 * 60 * 1000; // 3 minutes
 
 class SubfilePaging {
-    static requestPage(aidKey, store, ajaxRespEventHandler) {
+    static requestPage(aidKey, store, ajaxRespEventHandler, ajaxErrorEventHandler) {
         let reqFrom = store.current.topRrn;
         let wantDropped = !store.fldDrop.isFolded;
         let wantPageSize = store.sflRecords.pageSize;
@@ -65,12 +65,12 @@ class SubfilePaging {
                         ajaxRespEventHandler(jsonStr);
                     }
                     ).catch(function (err) {
-                        console.error(`JSON decode error:${err}`);
+                        ajaxErrorEventHandler(err);
                     });
                 }
             ).
             catch(function (err) {
-                console.error(`Fetch failed error:${err}`);
+                ajaxErrorEventHandler(err);
             }
         );
     }
