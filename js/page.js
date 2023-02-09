@@ -228,19 +228,23 @@ class Page {
         }
 
         const action = Kbd.processKeyDown(event, this.aidKeyBitmap);
+        const aidKey = action.aidKeyToPush;
 
-        if (action.aidKeyToPush) {
-            if (action.useAjax && action.sflCtlStore) {
-                this.suspendAsyncPost = true;
-                SubfilePaging.requestPage(
-                    action.aidKeyToPush,
-                    action.sflCtlStore,
-                    this.handleAjaxGetRecordsResponseEvent,
-                    this.handleAjaxGetRecordsErrorEvent
-                );
+        if (aidKey) {
+            const store = action.sflCtlStore;
+            let postAjax = action.useAjax && store;
+            if (postAjax) {
+                postAjax = !((aidKey === 'PgDn' || aidKey === 'PgUp') && !store.sflRecords.allowsAjax);
+                if (postAjax) {
+                    this.suspendAsyncPost = true;
+                    if (!SubfilePaging.requestPage(aidKey, store, this.handleAjaxGetRecordsResponseEvent, this.handleAjaxGetRecordsErrorEvent)) {
+                        this.suspendAsyncPost = false;
+                    }
+                }
             }
-            else {
-                this.pushKey(action.aidKeyToPush);
+
+            if (!postAjax) {
+                this.pushKey(aidKey);
             }
         }
 
@@ -257,18 +261,21 @@ class Page {
         if (this.suspendAsyncPost) {
             return;
         }
-        const keyDetail = Kbd.convertKeyNameToKeyDetail(keyToPush,this.aidKeyBitmap);
+        const keyDetail = Kbd.convertKeyNameToKeyDetail(keyToPush, this.aidKeyBitmap);
         if (keyDetail) {
-            const action = Kbd.processKeyDetail(keyDetail,this.aidKeyBitmap);
-            if (action.aidKeyToPush && action.useAjax && action.sflCtlStore) {
-                this.suspendAsyncPost = true;
-                SubfilePaging.requestPage(
-                    action.aidKeyToPush,
-                    action.sflCtlStore,
-                    this.handleAjaxGetRecordsResponseEvent,
-                    this.handleAjaxGetRecordsErrorEvent
-                );
-                return;
+            const action = Kbd.processKeyDetail(keyDetail, this.aidKeyBitmap);
+            const aidKey = action.aidKeyToPush;
+            const store = action.sflCtlStore;
+
+            if (aidKey && action.useAjax && store) {
+                const postAjax = !((aidKey === 'PgDn' || aidKey === 'PgUp') && !store.sflRecords.allowsAjax);
+                if (postAjax) {
+                    this.suspendAsyncPost = true;
+                    if (!SubfilePaging.requestPage(aidKey, store, this.handleAjaxGetRecordsResponseEvent, this.handleAjaxGetRecordsErrorEvent)) {
+                        this.suspendAsyncPost = false;
+                    }
+                    return;
+                }
             }
         }
 
