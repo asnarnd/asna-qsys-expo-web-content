@@ -31,16 +31,16 @@ class SubfilePaging {
                 reqFrom = Math.max( store.current.topRrn - store.sflRecords.pageSize, 0 );
                 if (reqFrom == 0 && store.current.topRrn == 0) {
                     Kbd.showInvalidRollAlert();
-                    return;
+                    return false;
                 }
                 wantPageSize = SubfilePaging.calcPageSizeIfDropped(store, wantPageSize);
                 break;
 
             default:
                 if (aidKey === store.fldDrop.aidKey) { // Fold/Drop (toggle) request ... same range
-                    if (!store.fldDrop.foldLinesPerRecord) { return; }
+                    if (!store.fldDrop.foldLinesPerRecord) { return false; }
                     const foldRowsPerRecord = parseInt(store.fldDrop.foldLinesPerRecord, 10);
-                    if (foldRowsPerRecord === NaN || foldRowsPerRecord <= 0) { return; }
+                    if (foldRowsPerRecord === NaN || foldRowsPerRecord <= 0) { return false; }
                     wantDropped = store.fldDrop.isFolded ? true : false; // Request opposite
                     if (wantDropped)
                         wantPageSize = store.sflRecords.pageSize * foldRowsPerRecord;
@@ -73,6 +73,8 @@ class SubfilePaging {
                 ajaxErrorEventHandler(err);
             }
         );
+
+        return true;
     }
 
     static calcPageSizeIfDropped(store, pageSize) {

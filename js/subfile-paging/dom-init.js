@@ -47,6 +47,9 @@ class SubfileController {
                     try {
                         const encInitData = Base64.decode(initEncodedData);
                         const initData = JSON.parse(encInitData);
+                        if (typeof initData.sflRecords.allowsAjax === 'undefined' ) {
+                            initData.sflRecords.allowsAjax = true;
+                        }
                         const sflCtrlStore = SubfilePagingStore.register(initData);
                         if (!SubfileController.hasNestedSflController(sflcDiv)) {
                             let recordsContainer = DdsGrid.findRowSpanDiv(initData.name, sflcDiv);
@@ -217,7 +220,8 @@ class SubfileController {
             const cueCurrentRecord = inputBehaviour.clickSetsCurrentRecord
             row.addEventListener('click', (evt) => {
                 SubfileController.setCurrentSelection(recordsContainer, row, cueCurrentRecord);
-                if (evt.target === row || (evt.target.tagName !== 'INPUT' && evt.target.tagName !== 'SELECT' && evt.target.tagName !== 'TEXTAREA')) {
+                const targetTagName = evt.target.tagName;
+                if (evt.target === row || (targetTagName !== 'INPUT' && targetTagName !== 'SELECT' && targetTagName !== 'TEXTAREA' && targetTagName !== 'BUTTON')) {
                     PositionCursor.toFirstInputInSubfileRow(row);
                 }
             });
