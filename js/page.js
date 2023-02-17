@@ -81,6 +81,9 @@ class Page {
         const main = thisForm.querySelector(MAIN_SELECTOR);
         const sflEndIcons = SubfileController.init(main, DdsWindow.activeWindowRecord !== null);
         DdsGrid.completeGridRows(thisForm, DdsWindow.activeWindowRecord);
+        if (sflEndIcons && sflEndIcons.length) {
+            SubfileController.moveEmptyRowsBeforeSflEndRow(thisForm);
+        }
         this.stretchConstantsText();
         this.addOnClickPushKeyEventListener();
         this.applyInvertFontColors();

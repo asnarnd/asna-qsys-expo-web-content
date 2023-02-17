@@ -293,6 +293,7 @@ class SubfileController {
                 iconTD.setAttribute('colspan', rows.length);
             }
             iconRow.appendChild(iconTD);
+            iconRow.setAttribute(AsnaDataAttrName.SFL_END_ADDED_ROW, '');
             recordsContainer.appendChild(iconRow);
         }
         else {
@@ -305,6 +306,7 @@ class SubfileController {
 
             span.style.gridRow = '1';
             iconRow.appendChild(span);
+            iconRow.setAttribute(AsnaDataAttrName.SFL_END_ADDED_ROW, '');
             recordsContainer.appendChild(iconRow);
         }
 
@@ -313,6 +315,40 @@ class SubfileController {
         }
 
         return { el: span, iconParms: { awesomeFontId: iconName, color: '*class', title: tooltipText ? tooltipText: '' } };
+    }
+
+    static nextAll(el) {
+        let result = [];
+        if (el.nextElementSibling == null) { return result; }
+
+        do {
+            el = el.nextElementSibling;
+            if (el) {
+                result.push(el);
+            }
+        } while (el);
+
+        return result;
+    }
+
+    static moveEmptyRowsBeforeSflEndRow(form) {
+        const sflIconRow = form.querySelector(`div[${AsnaDataAttrName.SFL_END_ADDED_ROW}]`);
+        const sflTableIconRow = form.querySelector(`tr[${AsnaDataAttrName.SFL_END_ADDED_ROW}]`);
+
+        if (!(sflIconRow || sflTableIconRow)) { return; }
+
+        if (sflIconRow) {
+            const recordsContainter = sflIconRow.parentElement;
+            const allNextSiblings = SubfileController.nextAll(sflIconRow);
+            allNextSiblings.forEach((emptyRow) => {
+                const removed = recordsContainter.removeChild(emptyRow);
+                recordsContainter.insertBefore(removed, sflIconRow);
+            });
+            return;
+        }
+        if (sflTableIconRow) {
+
+        }
     }
 
     static executeDblClick(row, targetField, targetValue, aidKey) {

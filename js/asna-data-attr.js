@@ -59,10 +59,14 @@ const AsnaDataAttrName = {
     SIGNATURE_OPTIONS: 'data-asna-aignature-options',
     SIGNATURE_INTERNAL_NAME: 'data-asna-signature-name', // (internal and volatile)
 
+    // Message related
+    SUBFILE_MSG_TEXT: 'data-asna-msg-text', // ** Experimental (see Case 20807: Message Subfile Errors have no way to "Reset" the error)
+    VOLATILE_MSG: 'data-asna-volatile-msg', // ** Experimental (see Case 21498: Unify Displaypage Message Presentation)
+
     // Misc
     AUTO_POSTBACK: 'data-asna-autopostback',
     CHECK_MANDATORY: 'data-asna-check-mandatory',
     LEFT_PAD: 'data-asna-leftpad',
-    SUBFILE_MSG_TEXT: 'data-asna-msg-text', // ** Experimental (see Case 20807: Message Subfile Errors have no way to "Reset" the error
-    GRID_PANEL_SPAN_STYLE_COL_SPAN: 'data-asna-grid-panel-col-span'
+    GRID_PANEL_SPAN_STYLE_COL_SPAN: 'data-asna-grid-panel-col-span',
+    SFL_END_ADDED_ROW: 'data-asna-sfl-added-row'
 }
