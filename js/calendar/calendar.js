@@ -59,7 +59,11 @@ class Calendar {
         wrapper.style.gridRow = '1';
         this.wrap(input, wrapper);
 
+        const tabIndex = input.getAttribute('tabIndex');
         const button = CalendarUI.createIconButton();
+        if (tabIndex) {
+            button.setAttribute('tabIndex', tabIndex);
+        }
         wrapper.appendChild(button);
         button.addEventListener('click', (event) => { this.handleCalendarOnClickEvent(event, input, options); return false; });
     }
