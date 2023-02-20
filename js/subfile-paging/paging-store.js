@@ -26,7 +26,7 @@ class SubfilePagingStore {
 
 
     getSflCtlStore(name) {
-        return this.sflCtrlStorage[name]
+        return this.sflCtrlStorage[name];
     }
 
     getSflCtlStoreNames() {

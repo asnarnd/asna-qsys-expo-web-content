@@ -278,23 +278,53 @@ class SubfileController {
 
     static addSubfileEndCue(recordsContainer, isAtBottom, tooltipText, sflColRange) {
         const iconName = isAtBottom ? ICON_NAME_NO_MORE : ICON_NAME_MORE;
-
         const span = document.createElement('span');
         span.className = 'dds-cells-suitable-for-icons';
         span.classList.add(isAtBottom ? 'sflend-bottom' : 'sflend-more');
 
         if (recordsContainer.tagName === 'TBODY') {
-            const rows = recordsContainer.querySelectorAll('tr');
+            const table = recordsContainer.parentElement;
+            const oldFooter = table.querySelector('tfoot');
+            if (oldFooter) {
+                table.removeChild(oldFooter);
+            }
             const iconRow = document.createElement('tr');
             const iconTD = document.createElement('td');
             iconTD.classList.add('sflend-icon-table-data');
             iconTD.appendChild(span);
-            if (rows && rows.length > 0) {
-                iconTD.setAttribute('colspan', rows.length);
+            iconRow.append(iconTD);
+
+            const subfile = recordsContainer.closest(`[${AsnaDataAttrName.ROW}]`);
+            if (subfile) {
+                const rowRange = DdsGrid.getRowRange(subfile);
+                if (rowRange && rowRange.length == 2) {
+                    const fromRow = parseInt(rowRange[0], 10);
+                    const toRow = parseInt(rowRange[1], 10);
+                    const sflRowCount = (toRow - fromRow) + 1;
+                    const trows = recordsContainer.querySelectorAll('tr');
+                    const tdsTr = trows.length && trows.length > 0 ? trows[trows.length - 1].querySelectorAll('td') : [];
+                    const nonEmptyRowCount = SubfileController.countNonEmpty(trows);
+                    if (tdsTr.length > 1 && sflRowCount > nonEmptyRowCount ) {
+                        if (tdsTr.length) {
+                            for (let i = 0, l = sflRowCount - nonEmptyRowCount; i < l; i++) {
+                                const tr = document.createElement('tr');
+                                for (let j = 0; j < tdsTr.length; j++) {
+                                    const td = document.createElement('td');
+                                    td.innerHTML = '&nbsp;';
+                                    tr.appendChild(td);
+                                }
+                                recordsContainer.appendChild(tr);
+                            }
+                        }
+                    }
+                    if (tdsTr.length > 1) {
+                        iconTD.setAttribute('colSpan', tdsTr.length);
+                    }
+                }
+                const tfoot = document.createElement('tfoot');
+                tfoot.appendChild(iconRow);
+                recordsContainer.parentElement.appendChild(tfoot);
             }
-            iconRow.appendChild(iconTD);
-            iconRow.setAttribute(AsnaDataAttrName.SFL_END_ADDED_ROW, '');
-            recordsContainer.appendChild(iconRow);
         }
         else {
             if (sflColRange.max && sflColRange.min && sflColRange.max > sflColRange.min) {
@@ -317,6 +347,14 @@ class SubfileController {
         return { el: span, iconParms: { awesomeFontId: iconName, color: '*class', title: tooltipText ? tooltipText: '' } };
     }
 
+    static countNonEmpty(nodeList) {
+        let count = 0;
+        nodeList.forEach((node) => {
+            if (node.innerHTML !== '') { count++; }
+        });
+        return count;
+    }
+
     static nextAll(el) {
         let result = [];
         if (el.nextElementSibling == null) { return result; }
@@ -333,22 +371,16 @@ class SubfileController {
 
     static moveEmptyRowsBeforeSflEndRow(form) {
         const sflIconRow = form.querySelector(`div[${AsnaDataAttrName.SFL_END_ADDED_ROW}]`);
-        const sflTableIconRow = form.querySelector(`tr[${AsnaDataAttrName.SFL_END_ADDED_ROW}]`);
+        // For TBODY we don't need to do anything.
 
-        if (!(sflIconRow || sflTableIconRow)) { return; }
+        if (!sflIconRow ) { return; }
 
-        if (sflIconRow) {
-            const recordsContainter = sflIconRow.parentElement;
-            const allNextSiblings = SubfileController.nextAll(sflIconRow);
-            allNextSiblings.forEach((emptyRow) => {
-                const removed = recordsContainter.removeChild(emptyRow);
-                recordsContainter.insertBefore(removed, sflIconRow);
-            });
-            return;
-        }
-        if (sflTableIconRow) {
-
-        }
+        const recordsContainter = sflIconRow.parentElement;
+        const allNextSiblings = SubfileController.nextAll(sflIconRow);
+        allNextSiblings.forEach((emptyRow) => {
+            const removed = recordsContainter.removeChild(emptyRow);
+            recordsContainter.insertBefore(removed, sflIconRow);
+        });
     }
 
     static executeDblClick(row, targetField, targetValue, aidKey) {

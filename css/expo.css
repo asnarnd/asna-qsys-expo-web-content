@@ -459,12 +459,14 @@ body {
 .dds-message-panel {
     overflow: auto;
     color: red;
-    height: calc(1.2 * var(--body-font-size));
+    height: calc(1.2 * calc( var(--body-font-size) * 0.8 ));
 }
 
 .dds-message-panel ul {
     list-style-type: none;
     margin: 0;
+    margin-left: 1em;
+    font-size: calc( var(--body-font-size) * 0.8 );
     padding: 0;
 }
 
