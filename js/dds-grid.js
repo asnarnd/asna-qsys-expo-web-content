@@ -135,13 +135,23 @@ class DdsGrid {
 
         if (fromRow < 0 || toRow < fromRow) { return; }  // Unexpected
 
-        const requestedRows = (toRow - fromRow) + 1;
+        let requestedRows = (toRow - fromRow) + 1;
 
         if (recordsContainer.classList.contains(CLASS_GRID_ROW_SPAN)) { // RowSpan Panel
-            const cssVarRoot = document.documentElement.style;
             const a = 'var(--dds-grid-row-padding-top)';
             const b = 'calc(var(--body-font-size) * 1.1429)';
             const c = 'var(--dds-grid-row-padding-bottom)';
+
+            const record = recordsContainer.closest(`[${AsnaDataAttrName.RECORD}]`);
+            if (record) {
+                const sflCtrlRecName = record.getAttribute(AsnaDataAttrName.RECORD);
+                if (sflCtrlRecName) {
+                    const sflCtrlData = SubfilePagingStore.getSflCtlStore(sflCtrlRecName);
+                    if (sflCtrlData && sflCtrlData.sflEnd.showSubfileEnd) {
+                        requestedRows++; // Add one more Grid row to show SFLEND icon
+                    }
+                }
+            }
 
             recordsContainer.style.gridTemplateRows = `repeat(${requestedRows}, calc(${a} + ${b} + ${c}))`;
 
