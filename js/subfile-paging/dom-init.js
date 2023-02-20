@@ -278,12 +278,16 @@ class SubfileController {
 
     static addSubfileEndCue(recordsContainer, isAtBottom, tooltipText, sflColRange) {
         const iconName = isAtBottom ? ICON_NAME_NO_MORE : ICON_NAME_MORE;
-
         const span = document.createElement('span');
         span.className = 'dds-cells-suitable-for-icons';
         span.classList.add(isAtBottom ? 'sflend-bottom' : 'sflend-more');
 
         if (recordsContainer.tagName === 'TBODY') {
+            const table = recordsContainer.parentElement;
+            const oldFooter = table.querySelector('tfoot');
+            if (oldFooter) {
+                table.removeChild(oldFooter);
+            }
             const iconRow = document.createElement('tr');
             const iconTD = document.createElement('td');
             iconTD.classList.add('sflend-icon-table-data');
