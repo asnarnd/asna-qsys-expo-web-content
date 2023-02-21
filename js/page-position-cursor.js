@@ -274,6 +274,7 @@ class PositionCursor {
     }
 
     static selectText(input, fromPos, toPos) {
+        if (input.type === 'radio' || input.type === 'checkbox') { return; }
         if (input.createTextRange) {
             const range = el.createTextRange();
             range.collapse(true);

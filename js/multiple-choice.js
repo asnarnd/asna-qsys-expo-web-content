@@ -211,7 +211,7 @@ class RadioButtonGroup {
             const toReplace = field.parent;
             const input = document.createElement('input');
             input.type = 'text';
-            input.display = 'none';
+            input.style.display = 'none';
             input.name = field.name;
             input.value = field.value;
             input.setAttribute(AsnaDataAttrName.ROWCOL, toReplace.getAttribute(AsnaDataAttrName.ROWCOL));
