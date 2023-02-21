@@ -234,6 +234,8 @@ class Page {
         const aidKey = action.aidKeyToPush;
 
         if (aidKey) {
+            PageAlert.removeVolatileMsgs();
+
             const store = action.sflCtlStore;
             let postAjax = action.useAjax && store;
             if (postAjax) {

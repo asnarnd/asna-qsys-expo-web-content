@@ -121,7 +121,10 @@ class Kbd {
                         return { aidKeyToPush: keyName, shouldCancel: true };
                     }
                     else {
-                        PageAlert.show(KEY_NOT_VALID_MSG.FunctionKey.replace('${keyName}', keyName), OK_TEXT);
+                        const errorMsg = KEY_NOT_VALID_MSG.FunctionKey.replace('${keyName}', keyName);
+                        if (!PageAlert.prependPanelMsg(errorMsg)) {
+                            PageAlert.show(errorMsg, OK_TEXT);
+                        }
                         return { returnBooleanValue: false, shouldCancel: true };
                     }
                 }
@@ -206,7 +209,10 @@ class Kbd {
     }
     
     showInvalidRollAlert() {
-        PageAlert.show(KEY_NOT_VALID_MSG.PgUp_PgDown, OK_TEXT);
+        const errorMsg = KEY_NOT_VALID_MSG.PgUp_PgDown;
+        if (!PageAlert.prependPanelMsg(errorMsg)) {
+            PageAlert.show(errorMsg, OK_TEXT);
+        }
     }
 
     static isTextArea(el) {
