@@ -12,7 +12,8 @@ import { SubfilePagingStore } from './subfile-paging/paging-store.js';
 import { SubfileController } from './subfile-paging/dom-init.js';
 import { PositionCursor } from './page-position-cursor.js';
 
-const DDS_FILE_LINES = 27;
+const MINROWS_HIDDEN_FIELD_NAME = '__MinRows__';
+const DDS_DEFAULT_FILE_LINES = 24;
 const MAIN_SELECTOR = 'main[role=main]';
 const CLASS_GRID_ROW = 'dds-grid-row';
 const CLASS_GRID_EMPTY_ROW = 'dds-grid-empty-row';
@@ -26,6 +27,15 @@ class DdsGrid {
 
         if (!records.length) {
             return;
+        }
+
+        let pageMinRows = DDS_DEFAULT_FILE_LINES;
+        const inputMinRows = form[MINROWS_HIDDEN_FIELD_NAME];
+        if (inputMinRows && inputMinRows.value) {
+            const minRows = parseInt(inputMinRows.value, 10);
+            if (!isNaN(minRows)) {
+                pageMinRows = minRows;
+            }
         }
 
         let lastRowVal = 0;
@@ -103,7 +113,7 @@ class DdsGrid {
             if (lastRow) {
                 const parent = lastRow.parentElement;
 
-                for (let i = lastRowVal; i < DDS_FILE_LINES; i++) {
+                for (let i = lastRowVal; i < pageMinRows; i++) {
                     parent.appendChild(this.createEmptyDivGridRowStyle(i + 1));
                 }
             }
