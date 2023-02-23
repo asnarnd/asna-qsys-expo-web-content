@@ -7,6 +7,7 @@
 
 export { theAlert as PageAlert};
 
+import { AsnaDataAttrName } from '../js/asna-data-attr.js';
 import { DomEvents } from '../js/dom-events.js';
 import { DialogPolyfill } from '../js/bterm/terminal-dialog-polyfill.js';
 
@@ -41,6 +42,12 @@ class EnhancedAlert {
         document.body.appendChild(dialogEl);
     }
 
+    static selectFirstMsgPanel() {
+        const msgPanels = document.querySelectorAll('.dds-message-panel');
+        if (!msgPanels || msgPanels.length === 0) { return null; }
+        return msgPanels[0];
+    }
+
     show(errorMsg, okText, focusWhenDone) {
         this.savedActiveElement = focusWhenDone ? focusWhenDone : document.activeElement;
         this.dialog = this.dialogPolyfill.dialogQuery('#alert');
@@ -52,6 +59,44 @@ class EnhancedAlert {
 
         EnhancedAlert.AddClickEventListener(this.dialog, '#dialog-action-ok', this.handleOkClickEvent, false);
     }
+
+    prependPanelMsg(msg) {
+        const msgPanel = EnhancedAlert.selectFirstMsgPanel();
+        if (!msgPanel) { return false; }
+        this.removeVolatileMsgs(msgPanel);
+        let ul = msgPanel.querySelector('ul');
+        if (!ul) {
+            ul = document.createElement('ul');
+            msgPanel.appendChild(ul);
+        }
+        const li = document.createElement('li');
+        li.innerText=msg;
+        li.setAttribute(AsnaDataAttrName.VOLATILE_MSG, '');
+
+        const firstChild = ul.firstChild;
+        if (!firstChild) {
+            ul.appendChild(li);
+        }
+        else {
+            ul.insertBefore(li, firstChild);
+        }
+        return true;
+    }
+
+    removeVolatileMsgs(msgPanel) {
+        if (!msgPanel) {
+            msgPanel = EnhancedAlert.selectFirstMsgPanel();
+        }
+        if (!msgPanel) {
+            return;
+        }
+        const volatileElements = msgPanel.querySelectorAll(`li[${AsnaDataAttrName.VOLATILE_MSG}]`);
+        volatileElements.forEach((li) => {
+            const ul = li.parentElement;
+            ul.removeChild(li);
+        });
+    }
+
 
     handleOkClickEvent(event) {
         DomEvents.cancelEvent(event);
